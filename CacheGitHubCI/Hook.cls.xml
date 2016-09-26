@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-09-26 15:42:23">
 <Class name="CacheGitHubCI.Hook">
 <Description>
 Hook tying GitHub repository and Cache Namespace.
 Create instance of the class, create webhook or task for updates and save the instance.</Description>
 <Super>%Persistent</Super>
+<TimeChanged>64169,44272</TimeChanged>
 <TimeCreated>63595,74765.029055</TimeCreated>
 
 <Property name="Owner">

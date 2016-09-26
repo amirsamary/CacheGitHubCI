@@ -1,7 +1,8 @@
-<?xml version="1.0" encoding="UTF8"?>
-<Export generator="Cache" version="25">
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-09-26 15:42:23">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject</Super>
+<TimeChanged>64183,71494.025439</TimeChanged>
 <TimeCreated>63595,74968.945813</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -158,7 +159,7 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/contents" 	// as described in https://developer.github.com/v3/repos/	
 	
  	Set links = ##class(%ListOfDataTypes).%New()
- 	Set st = ..ProcessDirectory("",.req,Branch,.links)
+ 	Set st = ..ProcessDirectory("",.req,Branch,Namespace,.links)
  	Return:$$$ISERR(st) st
  	 	
  	Set namespace = $Namespace
@@ -179,7 +180,7 @@ Process one directory of GitHub repository. Recursive.<br>
 <b>Request</b> - Authenticated/Set %Net.HttpRequest object.<br>
 <b>Links</b> - List of links to raw files (which satisfy <b>IsCacheFile</b> conditions) from repository.<br>]]></Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec><![CDATA[Path:%String="",Request:%Net.HttpRequest,Branch:%String="",&Links:%ListOfDataTypes]]></FormalSpec>
+<FormalSpec><![CDATA[Path:%String="",Request:%Net.HttpRequest,Branch:%String="",Namespace:%String,&Links:%ListOfDataTypes]]></FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Set location = Request.Location
@@ -198,20 +199,52 @@ Process one directory of GitHub repository. Recursive.<br>
 	Set st = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(Request.HttpResponse.Data,,.objects,1)
 	Return:$$$ISERR(st) st
 	
-	For i = 1:1:objects.Count() {		
+	Write !,Request.Location
+	For i = 1:1:objects.Count() 
+	{		
 		Set obj = objects.GetAt(i)
-		If (obj.type = "dir") {
-			Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,.Links)
+		If (obj.type = "dir") 
+		{
+			Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,Namespace,.Links)
 			Return:$$$ISERR(st) st		
-		} ElseIf (obj.type = "file") {
+		}
+		ElseIf (obj.type = "file") 
+		{
 			//Do:..IsCacheFile(obj) Links.Insert(obj."download_url")
-			Do Links.Insert($LB(obj."download_url",..IsCacheFile(obj)))
-		} Else {
+			If ..FileHasChanged(Namespace, obj.path, obj.sha)
+			{
+				Write "."
+				Do Links.Insert($LB(obj."download_url",..IsCacheFile(obj),obj.path, obj.sha))
+			}
+		}
+		Else 
+		{
 			// obj.type = "symlink" or obj.type = "submodule"
 		} 
 	}
 	Set Request.Location = location // to keep track of where in the repository tree we are
 	Return $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="FileHasChanged">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>Namespace:%String,pFullFileName:%String,pFileHash:%String</FormalSpec>
+<Implementation><![CDATA[
+	Set tFullFileNameHash = $System.Encryption.SHA1Hash(pFullFileName)
+	
+	If $Get(^|Namespace|CGCIFileHash(tFullFileNameHash))=pFileHash Return 0
+	
+	Return 1
+]]></Implementation>
+</Method>
+
+<Method name="RegisterFileChanged">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>tFileFullName:%String,tFileHash:%String</FormalSpec>
+<Implementation><![CDATA[
+	Set tFullFileNameHash = $System.Encryption.SHA1Hash(tFileFullName)
+	Set ^CGCIFileHash(tFullFileNameHash)=tFileHash
 ]]></Implementation>
 </Method>
 
@@ -248,18 +281,16 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 		{
 			Set link = $ListGet(Links.GetAt(i),1)
 			Set bIsCacheFile = $ListGet(Links.GetAt(i),2)
-			Set ^gitfiles(i,"link")=link
-			Set ^gitfiles(i,"bIsCacheFile")=bIsCacheFile
+			Set tFileFullName = $ListGet(Links.GetAt(i),3)
+			Set tFileHash = $ListGet(Links.GetAt(i),4)
 			
 			Set streq = Request.Get($e(link,35,*)) // Remove "https://raw.githubusercontent.com/" from URL.	
 			If $$$ISERR(streq)
 			{
 				Set st=$$$ADDSC(st, streq)
-				Set ^gitfiles(i,"streq")=streq
 				Continue
 			}
 			
-			Set ^gitfiles(i,"stream")="starting..."
 			Set binarystream = Request.HttpResponse.Data
 			
 			Do binarystream.Rewind() // just in case
@@ -299,9 +330,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 				//It is probably a binary file anyway
 				Set characterStream=""
 				Set st=$$$ADDSC(st, stTranslate)
-				Set ^gitfiles(i,"stTranslate")=stTranslate
 			}
-			Set ^gitfiles(i,"stream")="Done"
 			
 			Do binarystream.Rewind()
 			
@@ -310,19 +339,21 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			set items = ""
 			If ('$IsObject(characterStream)) || (##class(CacheGitHubCI.UDL).IsUDLFile(characterStream))
 			{
-				Set ^gitfiles(i,"IsUDLFile")="1"
 				Set stload = ##class(CacheGitHubCI.UDL).LoadUDLFile(characterStream, binarystream, link, .items)
 			}
 			ElseIf bIsCacheFile
 			{
-				Set ^gitfiles(i,"IsUDLFile")="0"
 				Set stload = $system.OBJ.LoadStream(characterStream,"",.error,.items,,,,"UTF8")
 			}
-			Set ^gitfiles(i,"stload")=stload
+
 	 		If $$$ISERR(stload)
 	 		{
 		 		Set st=$$$ADDSC(st, stload)
 		 		Continue
+	 		}
+	 		Else
+	 		{
+		 		Do ..RegisterFileChanged(tFileFullName, tFileHash)
 	 		}
 	 		Merge Items = items  // Does not overwrite existing array keys: Items(itemname)=""
 		}
@@ -332,10 +363,27 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	Catch (oException)
 	{
 		Set st = oException.AsStatus()
-		If $D(i) Set ^gitfiles(i,"st final")=st
 	}
 	
 	Quit st
+]]></Implementation>
+</Method>
+
+<Method name="Debug">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pStringOrStream</FormalSpec>
+<Implementation><![CDATA[
+	Quit:pStringOrStream=""
+	If '$IsObject(pStringOrStream)
+	{
+		Set ^CGCIDebug($I(^CGCIDebug))=pStringOrStream
+	}
+	Else
+	{
+		Do pStringOrStream.Rewind()
+		Set ^CGCIDebug($I(^CGCIDebug))=pStringOrStream.Read(32000)
+		Do pStringOrStream.Rewind()
+	}
 ]]></Implementation>
 </Method>
 </Class>
