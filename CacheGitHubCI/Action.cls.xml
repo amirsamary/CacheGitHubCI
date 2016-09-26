@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-09-26 15:57:33">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.Action">
 <Super>%SerialObject</Super>
-<TimeChanged>64169,44271</TimeChanged>
 <TimeCreated>63599,80457.718702</TimeCreated>
 
 <Property name="Type">
