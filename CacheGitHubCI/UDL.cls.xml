@@ -14,7 +14,7 @@ Checks whether this file is in UDL format
 <ReturnType>%Boolean</ReturnType>
 <Implementation><![CDATA[
 	// probably 10 lines is enough
-	set counter = 0 
+	set counter = 0
 	while 'stream.AtEnd {
 		if counter >= 10 {
 			quit
@@ -27,7 +27,7 @@ Checks whether this file is in UDL format
 		set counter = counter + 1
 	}
 	do stream.Rewind()
-	
+
 	return $$$YES
 ]]></Implementation>
 </Method>
@@ -40,23 +40,8 @@ Finds the first string in a line
 <FormalSpec>line:%String</FormalSpec>
 <ReturnType>%String</ReturnType>
 <Implementation><![CDATA[
-	set counter = 1
-	set letter = $extract(line, counter)
-	while letter '= "" {
-		if letter = " " {
-			set counter = counter + 1
-			set letter = $extract(line, counter)
-			continue
-		} else {
-			set ext = $extract(line, counter, *)
-			set index = $find(ext, " ")
-			if index = 0 {
-				set index = 9999999999
-			}
-			return $extract(ext, 0, index - 2)		
-		}
-	}
-	return ""
+	set trimmed = $zstrip(line, "<>W")
+	return $piece(trimmed, " ")
 ]]></Implementation>
 </Method>
 
@@ -71,7 +56,7 @@ Finds a name of a class
 <Implementation><![CDATA[
 	while 'stream.AtEnd {
 		set line = stream.ReadLine()
-		
+
 		if $extract(line, 1, 3) = "///" { // check for inline comments
 			continue
 		} elseif $zconvert($extract(line, 1, 5), "l") = "class" {
@@ -101,7 +86,7 @@ Finds a name of a routine
 	while 'stream.AtEnd {
 		set line = stream.ReadLine()
 		set index = $find(line, "ROUTINE")
-		// TODO - check whether the name on the next line 
+		// TODO - check whether the name on the next line
 		// or something is between ROUTINE and name
 		if index {
 			if $find(line, "[Type=INC]") {
@@ -137,24 +122,24 @@ Finds a name of a dfi
 <Implementation><![CDATA[
 	#dim textreader As %XML.TextReader
 	set dfiContent = ""
-	
+
 	// I don't know why but if i just parse stream it doesn't work
 	while 'stream.AtEnd {
 		set dfiContent = dfiContent _ stream.Read()
 	}
-	
+
 	set st = ##class(%XML.TextReader).ParseString(dfiContent, .textreader)
 	return:$$$ISERR(st) st
-	
+
 	while textreader.Read() {
 		set node = textreader.Name
 		if (node = "pivot") || (node = "dashboard") {
 			do textreader.MoveToAttributeName("folderName")
 			set dfiFolderName = $translate(textreader.Value, " ", "-")
-			
+
 			do textreader.MoveToAttributeName("name")
 			set dfiName = $translate(textreader.Value, " ", "-")
-			
+
 			set name = dfiFolderName _ "-" _ dfiName _ "." _ node _ ".dfi"
 			return $$$OK
 		}
@@ -201,9 +186,9 @@ Imports the file in UDL file in the project
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	set st = $$$OK
-	
+
 	set ext = ..GetExt(url)
-	
+
 	if ext = "cls" {
 		set st = ..CreateClass(contentStream, url, .list)
 	}
@@ -212,7 +197,7 @@ Imports the file in UDL file in the project
 	}
 	elseif (ext = "inc") || (ext = "mac") {
 		set st = ..CreateRoutine(contentStream, url, .list)
-	} 
+	}
 	else
 	{
 		set st = ..CreateWebFile(contentStream, binaryStream, url, ext, .list)
@@ -252,11 +237,11 @@ Creates and imports the class into the project from stream
 <Implementation><![CDATA[
 	Set st = ..GetClassName(contentStream, .className)
 	Return:$$$ISERR(st) st
-	
+
 	set list(className _ ".cls") = ""
-	
+
 	Do contentStream.Rewind()
-	
+
 	If '..DoesClassExist(className) {
 		Set clsDef = ##class(%Dictionary.ClassDefinition).%New()
 		Set clsDef.Name = className
@@ -264,14 +249,14 @@ Creates and imports the class into the project from stream
 		Return:$$$ISERR(st) st
 	}
 
-	
+
 	Set namespace = $namespace
 	Set st = ##class(%Compiler.UDL.TextServices).SetTextFromStream(namespace, className, contentStream)
-	
+
 	if st {
 		w !, "Imported " _ className, !
 	}
-	
+
 	Return st
 ]]></Implementation>
 </Method>
@@ -289,13 +274,13 @@ Creates and imports the dfi file into the project from stream
     Try {
 	    Set st = ..GetDFIName(contentStream, .name)
 	    Return:$$$ISERR(st) st
-	    
+
 	    set list(name) = ""
-	    
+
         Set tDoc = ##class(%DeepSee.UI.FolderItemDocument).%New(name)
         Set st = tDoc.ImportFromXML(contentStream)
         Return:$$$ISERR(st) st
-        
+
         Set st = tDoc.Save()
         if st {
 		w !, "Imported " _ name, !
@@ -320,21 +305,21 @@ Creates and imports mac, int, inc files into the project from stream
 <Implementation><![CDATA[
 	Set st = ..GetRoutineName(contentStream, .name, .type)
 	do contentStream.Rewind()
-	
+
 	return:$$$ISERR(st) st
-	
+
 	if type = 1 {
 		set name = name _ ".mac"
-	} 
+	}
 	elseif type = 2 {
 		set name = name _ ".inc"
 	}
 	elseif type = 3 {
 		set name = name _ ".int"
 	}
-	
+
 	set list(name) = ""
-		
+
 	Set rtn = ##class(%Routine).%New(name)
 	While 'contentStream.AtEnd {
 		Set line = contentStream.ReadLine()
@@ -343,10 +328,10 @@ Creates and imports mac, int, inc files into the project from stream
 		}
 		Do rtn.WriteLine(line)
 	}
-	
+
 	Set st = rtn.Save()
  	Return:$$$ISERR(st) st
- 	
+
  	if st {
 		w !, "Imported " _ name, !
 	}
@@ -371,40 +356,40 @@ Creates and imports mac, int, inc files into the project from stream
 		// tDefaultApp will contain the CSP Default Application for this namespace
 		// Something like /csp/myapp/
 		Set tDefaultApp=$system.CSP.GetDefaultApp($namespace)_"/"
-		
+
 		// tCSPRootPath will contain something like /opt/intersystems/cache/csp/myapp/
 		set tCSPRootPath = $system.CSP.GetFileName(tDefaultApp)
-		
+
 		// url contains a file name such as ...folder/folder/mypage.csp?token=AGE9JMvEEP_RipBEqys9IAvmfwhwaarHks5XyKOowA%3D%3D
 		// after the following command, tFileName will contain only something like "mypage.csp"
 		Set tFileName = $Piece($Piece(url,"?",1),"/",*)
-		
+
 		Set tFileExtension = $ZConvert($Piece(tFileName,".",*),"L")
-		
+
 		// tCSPSubPath will have the subpath under the CSP application
-		// I am using the file name to cut the string at the end to keep only with 
+		// I am using the file name to cut the string at the end to keep only with
 		// the file path under the application. $Piece with * will leave the last slash there for us.
-		Set tCSPSubPath = $Piece(url,tDefaultApp,2,*)  
+		Set tCSPSubPath = $Piece(url,tDefaultApp,2,*)
 		Set tCSPSubPath = $Piece(tCSPSubPath, tFileName,1) //now it does't
-		
+
 		// Now we can have the complete physical path where we must put the CSP file
 		set tFileDirectory = tCSPRootPath_tCSPSubPath
 		Set tFullFileName = tFileDirectory_tFileName
-		
-		// And we can also have the complete CSP application file reference 
-		// If the file extension is "csp", we must put it on the list to be 
+
+		// And we can also have the complete CSP application file reference
+		// If the file extension is "csp", we must put it on the list to be
 		// compiled
 		Set tFullCSPFileName = tDefaultApp_tCSPSubPath_tFileName
-		
+
 		//On Windows, tFullFileName will contain \ and / but CreateDirectoryChain() and
 		//LinkToFile() already normalize the paths accordingly to the OS for us so
-		//we don't have to worry about it.	
+		//we don't have to worry about it.
 		If '##class(%File).CreateDirectoryChain(tFileDirectory)
 		{
 			Set st = $System.Status.Error(5001,"Could nor create path chain '"_tFileDirectory_"'")
 			Quit
 		}
-				
+
 		If $IsObject(contentStream) && ..IsWebFile(ext)
 		{
 			Set filestream = ##class(%Stream.FileCharacter).%New()
@@ -422,23 +407,23 @@ Creates and imports mac, int, inc files into the project from stream
 			Set st=filestream.CopyFrom(binaryStream)
 		}
 		Quit:$System.Status.IsError(st)
-		
+
 		set st = filestream.%Save()
 		Quit:$System.Status.IsError(st)
-		
+
 		// If this CSP file is a "csp" file, then we must queue it for compilation.
 		If tFileExtension="csp"
 		{
 			Set list(tFullCSPFileName)=""
 		}
-		
+
 		Write !, "Imported " _ tFullFileName, !
 	}
 	Catch (oException)
 	{
 		Set st = oException.AsStatus()
 	}
-	
+
 	Quit st
 ]]></Implementation>
 </Method>

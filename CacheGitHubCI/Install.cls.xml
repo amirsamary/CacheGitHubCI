@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="UTF8"?>
-<Export generator="Cache" version="25">
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2016.2 (Build 721U)" ts="2016-09-11 13:02:05">
 <Class name="CacheGitHubCI.Install">
+<TimeChanged>64172,46916.836169</TimeChanged>
 <TimeCreated>63613,47857.460994</TimeCreated>
 
 <XData name="Install">
@@ -114,14 +115,23 @@ Determine Namespace databease resource.</Description>
 ]]></Implementation>
 </Method>
 
+<Method name="GetBranch">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pVars</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[    Return $get(pVars("Branch"), "master")
+]]></Implementation>
+</Method>
+
 <Method name="DownloadFromGitHub">
 <ClassMethod>1</ClassMethod>
 <FormalSpec>pVars,pLogLevel,tInstaller</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
     Set Namespace=tInstaller.Evaluate("${Namespace}")
+    Set Branch = ..GetBranch(.pVars)
     Do tInstaller.PushNS("%SYS")
-    Set tSC = ..Update(Namespace, "amirsamary", "CacheGitHubCI", "udl")
+    Set tSC = ..Update(Namespace, "intersystems-ru", "CacheGitHubCI", Branch)
     Do tInstaller.PopNS()
     If $$$ISERR(tSC) Throw ##class(%Installer.Exception).CreateFromStatus(tSC)
     quit $$$OK
