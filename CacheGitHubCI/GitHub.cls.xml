@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-09-26 15:42:23">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-09-26 15:57:33">
 <Class name="CacheGitHubCI.GitHub">
-<Super>%RegisteredObject</Super>
-<TimeChanged>64183,71494.025439</TimeChanged>
+<Super>UDL</Super>
+<TimeChanged>64187,57409.065245</TimeChanged>
 <TimeCreated>63595,74968.945813</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -228,6 +228,9 @@ Process one directory of GitHub repository. Recursive.<br>
 </Method>
 
 <Method name="FileHasChanged">
+<Description>
+This method is used by ProcessDirectory() to determine if a file has
+changed since the last download. </Description>
 <ClassMethod>1</ClassMethod>
 <FormalSpec>Namespace:%String,pFullFileName:%String,pFileHash:%String</FormalSpec>
 <Implementation><![CDATA[
@@ -240,6 +243,11 @@ Process one directory of GitHub repository. Recursive.<br>
 </Method>
 
 <Method name="RegisterFileChanged">
+<Description>
+This method is called from DownloadFiles() to register a file that has just been
+downloaded from the server. The idea is that on the next synchronization with GitHub
+ProcessDirectory() will only queue for downloading files that are not registered (new files)
+or are registered but are different from the last download (changed files).</Description>
 <ClassMethod>1</ClassMethod>
 <FormalSpec>tFileFullName:%String,tFileHash:%String</FormalSpec>
 <Implementation><![CDATA[
@@ -337,9 +345,9 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			Set stload = $$$OK
 			
 			set items = ""
-			If ('$IsObject(characterStream)) || (##class(CacheGitHubCI.UDL).IsUDLFile(characterStream))
+			If ('$IsObject(characterStream)) || (..IsUDLFile(characterStream))
 			{
-				Set stload = ##class(CacheGitHubCI.UDL).LoadUDLFile(characterStream, binarystream, link, .items)
+				Set stload = ..LoadUDLFile(characterStream, binarystream, link, .items)
 			}
 			ElseIf bIsCacheFile
 			{
@@ -370,6 +378,9 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 </Method>
 
 <Method name="Debug">
+<Description>
+This is a helper method only used when debugging code. It should not
+be called from anywhere on production code.</Description>
 <ClassMethod>1</ClassMethod>
 <FormalSpec>pStringOrStream</FormalSpec>
 <Implementation><![CDATA[
