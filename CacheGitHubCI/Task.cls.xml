@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF8"?>
 <Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.Task">
 <Description>
@@ -32,6 +32,11 @@ GitHub password, corresponding to Username. Optional for public repositories.</D
 <Type>%String</Type>
 </Property>
 
+<Property name="Branch">
+<Type>%String</Type>
+<InitialExpression>"master"</InitialExpression>
+</Property>
+
 <Property name="Namespace">
 <Description>
 Namespace, where to download and compile repository</Description>
@@ -42,18 +47,40 @@ Namespace, where to download and compile repository</Description>
 <Method name="OnTask">
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	Return:'##class(%SYS.Namespace).Exists(..Namespace) $$$ERROR($$$NamespaceUnavailable,..Namespace)
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		If $System.Mirror.IsMember() && '$System.Mirror.IsPrimary()
+		{
+			//If we are part of a mirror and we are not the primary, we should not run right now.
+			Quit
+		}
+		
+		If '##class(%SYS.Namespace).Exists(..Namespace) 
+		{
+			Set tSC = $$$ERROR($$$NamespaceUnavailable,..Namespace)
+			Quit
+		}
 	
-	Set Owner = $p(..GitHubURL,"/",4)
-	Set Repository = $p(..GitHubURL,"/",5)
+		Set tOwner = $ZConvert($p(..GitHubURL,"/",4),"L")
+		Set tRepository = $ZConvert($p(..GitHubURL,"/",5),"L")
+		Set tNamespace = $ZConvert(..Namespace,"L")
+		
+		If ('##class(CacheGitHubCI.Hook).%ExistsId(tOwner_"||"_tRepository_"||"_tNamespace)) 
+		{
+			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,..Branch,..Username,..Password,tNamespace)
+			Set tSC = hook.%Save()
+			Quit:$System.Status.IsError(tSC)
+		} 
+		
+		Set tSC = ##class(CacheGitHubCI.Hook).Update(tOwner,tRepository,tNamespace)
+	}
+	Catch (oException)
+	{
+		Set tSC = oException.AsStatus()
+	}
 	
-	If ('##class(CacheGitHubCI.Hook).%ExistsId(Owner_"||"_Repository_"||"_..Namespace)) {
-		Set hook = ##class(CacheGitHubCI.Hook).%New(Owner,Repository,"",..Username,..Password,..Namespace)
-		Do hook.%Save()
-		kill hook
-	} 
-	
-	Quit ##class(CacheGitHubCI.Hook).Update(Owner,Repository,..Namespace)
+	Quit tSC
 ]]></Implementation>
 </Method>
 </Class>
