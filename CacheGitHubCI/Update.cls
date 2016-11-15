@@ -1,0 +1,119 @@
+/// 2016-11-10 - Amir - Changed PreCompileStatus, CompileStatus, PostCompileStatus and UnitTestStatus from %String to %Status
+/// 				    with a default value of 1 (stauts ok!) to support the new property KeepBrokenSourceOnError on the Hook class.
+Class CacheGitHubCI.Update Extends %Persistent
+{
+
+Property Hook As %String;
+
+ForeignKey HookForeignKey(Hook) References CacheGitHubCI.Hook();
+
+Property DateTimeStart As %TimeStamp [ InitialExpression = {$ZDT($NOW(),3,1,2)} ];
+
+Property DateTimeEnd As %TimeStamp;
+
+Property Length As %String;
+
+Property Commit As %String(MAXLEN = 100);
+
+Property Author As %String;
+
+Property URL As %String(MAXLEN = 500);
+
+Property PreCompileStatus As %Status [ InitialExpression = 1 ];
+
+Property CompileStatus As %String [ InitialExpression = 1 ];
+
+Property PostCompileStatus As %String [ InitialExpression = 1 ];
+
+Property UnitTestsStatus As %String [ InitialExpression = 1 ];
+
+/// This callback method is invoked when the current object is added to the SaveSet,
+/// either because %Save() was invoked on this object or on an object that references this object.
+/// %OnAddToSaveSet can modify the current object. It can also add other objects to the current
+/// SaveSet by invoking %AddToSaveSet or remove objects by calling %RemoveFromSaveSet.
+/// 
+/// <P>If this method returns an error status then %Save() will fail and the transaction
+/// will be rolled back.
+Method %OnAddToSaveSet(depth As %Integer = 3, insert As %Integer = 0, callcount As %Integer = 0) As %Status [ Private, ServerOnly = 1 ]
+{
+	Set ..DateTimeEnd = $ZDT($NOW(),3,1,2)
+	Set:(..Length = "") ..Length = $NORMALIZE($SYSTEM.SQL.DATEDIFF("s",..DateTimeStart,..DateTimeEnd),2)
+	Quit $$$OK
+}
+
+Method %OnNew(Hook As %String) As %Status [ Private, ServerOnly = 1 ]
+{
+	Set:$d(Hook) ..Hook = Hook
+	Quit $$$OK
+}
+
+ClassMethod GetLastSuccessfulCommit(Owner As %String, Repository As %String, Namespace = {$Namespace}) As %String
+{
+	Set id = Owner _ "||" _ Repository _ "||" _ Namespace 
+	&sql(SELECT TOP 1 "Commit" into :Commit FROM CacheGitHubCI."Update" 
+			where Hook=:id 
+			AND PreCompileStatus=1 AND CompileStatus=1 
+			AND PostCompileStatus=1 AND UnitTestsStatus=1 
+			ORDER BY DateTimeEnd DESC)
+	Return Commit
+}
+
+ClassMethod DisplayStatus(Status As %String = "") As %String [ SqlName = DisplayStatus, SqlProc ]
+{
+	return:$$$ISOK(Status) 1
+	return $System.Status.GetErrorText(Status)
+}
+
+Storage Default
+{
+<Data name="UpdateDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>DateTimeStart</Value>
+</Value>
+<Value name="3">
+<Value>DateTimeEnd</Value>
+</Value>
+<Value name="4">
+<Value>Length</Value>
+</Value>
+<Value name="5">
+<Value>Commit</Value>
+</Value>
+<Value name="6">
+<Value>Hook</Value>
+</Value>
+<Value name="7">
+<Value>Author</Value>
+</Value>
+<Value name="8">
+<Value>URL</Value>
+</Value>
+<Value name="9">
+<Value>Status</Value>
+</Value>
+<Value name="10">
+<Value>CompileStatus</Value>
+</Value>
+<Value name="11">
+<Value>PreCompileStatus</Value>
+</Value>
+<Value name="12">
+<Value>PostCompileStatus</Value>
+</Value>
+<Value name="13">
+<Value>UnitTestsStatus</Value>
+</Value>
+</Data>
+<DataLocation>^CacheGitHubCI.UpdateD</DataLocation>
+<DefaultData>UpdateDefaultData</DefaultData>
+<IdLocation>^CacheGitHubCI.UpdateD</IdLocation>
+<IndexLocation>^CacheGitHubCI.UpdateI</IndexLocation>
+<StreamLocation>^CacheGitHubCI.UpdateS</StreamLocation>
+<Type>%Library.CacheStorage</Type>
+}
+
+}
+
