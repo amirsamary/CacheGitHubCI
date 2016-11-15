@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 23:00:00">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64232,72067.917786</TimeChanged>
+<TimeChanged>64237,82716.588311</TimeChanged>
 <TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
@@ -65,40 +65,50 @@ default actions automatically.</Description>
 
 <Method name="OnTask">
 <ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	Quit ..Update(..GitHubURL, ..Username, ..Password, ..Branch, ..Namespace, ..ConfigureActions, ..ActionClassName)
+]]></Implementation>
+</Method>
+
+<Method name="Update">
+<Description>
+This method can be called directly by anyone that needs to update a namespace interactively</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Set tSC = $System.Status.OK()
 	Try
 	{		
-		If '##class(%SYS.Namespace).Exists(..Namespace) 
+		If '##class(%SYS.Namespace).Exists(pNamespace) 
 		{
-			Set tSC = $$$ERROR($$$NamespaceUnavailable,..Namespace)
+			Set tSC = $$$ERROR($$$NamespaceUnavailable,pNamespace)
 			Quit
 		}
 	
-		Set tOwner = $ZConvert($p(..GitHubURL,"/",4),"L")
-		Set tRepository = $ZConvert($p(..GitHubURL,"/",5),"L")
-		Set tNamespace = $ZConvert(..Namespace,"L")
+		Set tOwner = $ZConvert($p(pGitHubUrl,"/",4),"L")
+		Set tRepository = $ZConvert($p(pGitHubUrl,"/",5),"L")
+		Set tNamespace = $ZConvert(pNamespace,"L")
 		Set tHookId=tOwner_"||"_tRepository_"||"_tNamespace
 		
 		If ('##class(CacheGitHubCI.Hook).%ExistsId(tHookId)) 
 		{
-			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,..Branch,..Username,..Password,tNamespace,+..KeepBrokenSourceOnError)
+			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,pBranch,pUserName,pPassword,tNamespace,1)
 			Quit:$System.Status.IsError(tSC)
 		}
 		Else
 		{
 			Set hook = ##class(CacheGitHubCI.Hook).%OpenId(tHookId)
-			Set hook.Branch=..Branch
-			Set hook.Username=..Username
-			Set hook.Password=..Password
-			Set hook.KeepBrokenSourceOnError=..KeepBrokenSourceOnError
+			Set hook.Branch=pBranch
+			Set hook.Username=pUserName
+			Set hook.Password=pPassword
+			Set hook.KeepBrokenSourceOnError=1
 		}
 		
 		Set tSC = hook.%Save()
 		
-		If (..ConfigureActions) && (hook.PostCompile.Type="") && (hook.PreCompile.Type="") && (hook.UnitTests.Type="") && (..ActionClassName'="")
+		If (pConfigureActions) && (hook.PostCompile.Type="") && (hook.PreCompile.Type="") && (hook.UnitTests.Type="") && (pActionClassName'="")
 		{
-			Set tSC = ##class(CacheGitHubCI.ActionClassTemplate).SetupHookObj(hook, ..ActionClassName)
+			Set tSC = ##class(CacheGitHubCI.ActionClassTemplate).SetupHookObj(hook, pActionClassName)
 			Quit:$System.Status.IsError(tSC)
 		}
 		
