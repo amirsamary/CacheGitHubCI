@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-02 18:56:36">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64224,67755.307164</TimeChanged>
-<TimeCreated>63600,45875.997358</TimeCreated>
+<TimeChanged>64232,72067.917786</TimeChanged>
+<TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
 <Default>GitHubUpdateTask</Default>
@@ -58,18 +58,17 @@ default actions automatically.</Description>
 <Type>%String</Type>
 </Property>
 
+<Property name="KeepBrokenSourceOnError">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
 <Method name="OnTask">
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Set tSC = $System.Status.OK()
 	Try
-	{
-		If $System.Mirror.IsMember() && '$System.Mirror.IsPrimary()
-		{
-			//If we are part of a mirror and we are not the primary, we should not run right now.
-			Quit
-		}
-		
+	{		
 		If '##class(%SYS.Namespace).Exists(..Namespace) 
 		{
 			Set tSC = $$$ERROR($$$NamespaceUnavailable,..Namespace)
@@ -83,14 +82,19 @@ default actions automatically.</Description>
 		
 		If ('##class(CacheGitHubCI.Hook).%ExistsId(tHookId)) 
 		{
-			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,..Branch,..Username,..Password,tNamespace)
-			Set tSC = hook.%Save()
+			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,..Branch,..Username,..Password,tNamespace,+..KeepBrokenSourceOnError)
 			Quit:$System.Status.IsError(tSC)
 		}
 		Else
 		{
 			Set hook = ##class(CacheGitHubCI.Hook).%OpenId(tHookId)
+			Set hook.Branch=..Branch
+			Set hook.Username=..Username
+			Set hook.Password=..Password
+			Set hook.KeepBrokenSourceOnError=..KeepBrokenSourceOnError
 		}
+		
+		Set tSC = hook.%Save()
 		
 		If (..ConfigureActions) && (hook.PostCompile.Type="") && (hook.PreCompile.Type="") && (hook.UnitTests.Type="") && (..ActionClassName'="")
 		{

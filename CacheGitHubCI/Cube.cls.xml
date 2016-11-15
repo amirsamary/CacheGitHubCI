@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.Cube">
 <Description>
 Cube for Continuous Integration for InterSystems Caché and GitHub. See at https://github.com/intersystems-ru/CacheGitHubCI</Description>
 <ProcedureBlock>1</ProcedureBlock>
 <Super>%DeepSee.CubeDefinition</Super>
-<TimeCreated>63624,29337.207633</TimeCreated>
+<TimeChanged>64219,61896</TimeChanged>
+<TimeCreated>64232,70928.955421</TimeCreated>
 <DependsOn>CacheGitHubCI.Hook</DependsOn>
 
 <Parameter name="DOMAIN">

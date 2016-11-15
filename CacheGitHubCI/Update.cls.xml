@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.Update">
+<Description>
+2016-11-10 - Amir - Changed PreCompileStatus, CompileStatus, PostCompileStatus and UnitTestStatus from %String to %Status
+				    with a default value of 1 (stauts ok!) to support the new property KeepBrokenSourceOnError on the Hook class.</Description>
 <Super>%Persistent</Super>
-<TimeCreated>63596,55253.399026</TimeCreated>
+<TimeChanged>64232,71189</TimeChanged>
+<TimeCreated>64232,70932.055199</TimeCreated>
 
 <Property name="Hook">
 <Type>%String</Type>
@@ -41,23 +45,23 @@
 </Property>
 
 <Property name="PreCompileStatus">
-<Type>%String</Type>
-<Parameter name="MAXLEN" value="500"/>
+<Type>%Status</Type>
+<InitialExpression>1</InitialExpression>
 </Property>
 
 <Property name="CompileStatus">
 <Type>%String</Type>
-<Parameter name="MAXLEN" value="500"/>
+<InitialExpression>1</InitialExpression>
 </Property>
 
 <Property name="PostCompileStatus">
 <Type>%String</Type>
-<Parameter name="MAXLEN" value="500"/>
+<InitialExpression>1</InitialExpression>
 </Property>
 
 <Property name="UnitTestsStatus">
 <Type>%String</Type>
-<Parameter name="MAXLEN" value="500"/>
+<InitialExpression>1</InitialExpression>
 </Property>
 
 <Method name="%OnAddToSaveSet">
@@ -126,8 +130,6 @@ will be rolled back.]]></Description>
 <IndexLocation>^CacheGitHubCI.UpdateI</IndexLocation>
 <StreamLocation>^CacheGitHubCI.UpdateS</StreamLocation>
 <Data name="UpdateDefaultData">
-<Structure>listnode</Structure>
-<Subscript/>
 <Value name="1">
 <Value>%%CLASSNAME</Value>
 </Value>

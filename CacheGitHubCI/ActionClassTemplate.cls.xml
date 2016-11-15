@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-02 18:56:36">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.ActionClassTemplate">
 <Description>
 This is a suggestion of a class from which a system that is using CGCI could inhirit from

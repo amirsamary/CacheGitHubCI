@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2016.2 (Build 721U)" ts="2016-09-12 18:04:29">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64173,64816.292293</TimeChanged>
-<TimeCreated>63595,74968.945813</TimeCreated>
+<TimeChanged>64232,71189</TimeChanged>
+<TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
 <ClassMethod>1</ClassMethod>
@@ -155,21 +155,36 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	#dim req As %Net.HttpRequest
-	Set req = ..CreateRequest(Username, Password)
-	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/contents" 	// as described in https://developer.github.com/v3/repos/
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		Set tCGCINamespace = $Namespace
+		
+		Set req = ..CreateRequest(Username, Password)
+		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/contents" 	// as described in https://developer.github.com/v3/repos/
 
- 	Set links = ##class(%ListOfDataTypes).%New()
- 	Set st = ..ProcessDirectory("",.req,Branch,Namespace,.links)
- 	Return:$$$ISERR(st) st
+		Set links = ##class(%ListOfDataTypes).%New()
+		Set tSC = ..ProcessDirectory("",.req,Branch,Namespace,.links)
+		Quit:$System.Status.IsError(tSC)
 
- 	Set namespace = $Namespace
- 	Zn Namespace
-	Set st = ..DownloadFiles(links,req,.list)
-	zw list
-	Set st2 = $system.OBJ.CompileList(.list,"cuk /checkuptodate=expandedonly")
-	Zn namespace
+		Set tSC = ..DownloadFiles(links,req,.list,Namespace)
+		Quit:$System.Status.IsError(tSC)
+		
+		Set bDBReadWrite = ..CanWriteOnCurrentNS()
+		If bDBReadWrite
+		{
+			Zn Namespace
 
- 	Return $$$ADDSC(st, st2)
+			Set tSC = $system.OBJ.CompileList(.list,"cuk /checkuptodate=expandedonly")
+		}
+	}
+	Catch (oException)
+	{
+		Set tSC = oException.AsStatus()
+	}
+	
+	ZN tCGCINamespace
+	Quit tSC
 ]]></Implementation>
 </Method>
 
@@ -180,7 +195,7 @@ Process one directory of GitHub repository. Recursive.<br>
 <b>Request</b> - Authenticated/Set %Net.HttpRequest object.<br>
 <b>Links</b> - List of links to raw files (which satisfy <b>IsCacheFile</b> conditions) from repository.<br>]]></Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec><![CDATA[Path:%String="",Request:%Net.HttpRequest,Branch:%String="",Namespace:%String,&Links:%ListOfDataTypes]]></FormalSpec>
+<FormalSpec><![CDATA[Path:%String="",Request:%Net.HttpRequest,Branch:%String="",pTargetNamespace:%String,&Links:%ListOfDataTypes]]></FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Set location = Request.Location
@@ -205,16 +220,17 @@ Process one directory of GitHub repository. Recursive.<br>
 		Set obj = objects.GetAt(i)
 		If (obj.type = "dir")
 		{
-			Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,Namespace,.Links)
+			Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,pTargetNamespace,.Links)
 			Return:$$$ISERR(st) st
 		}
 		ElseIf (obj.type = "file")
 		{
 			//Do:..IsCacheFile(obj) Links.Insert(obj."download_url")
-			If ..FileHasChanged(Namespace, obj.path, obj.sha)
+			Set bIsCacheFile = ..IsCacheFile(obj)
+			If ..FileHasChanged(pTargetNamespace, obj.path, obj.sha)
 			{
 				Write "."
-				Do Links.Insert($LB(obj."download_url",..IsCacheFile(obj),obj.path, obj.sha))
+				Do Links.Insert($LB(obj."download_url",bIsCacheFile,obj.path, obj.sha))
 			}
 		}
 		Else
@@ -230,13 +246,13 @@ Process one directory of GitHub repository. Recursive.<br>
 <Method name="FileHasChanged">
 <Description>
 This method is used by ProcessDirectory() to determine if a file has
-changed since the last download. </Description>
+changed since the last download. 
+pIsCacheFile will allow us to know if we can download this file or not. </Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Namespace:%String,pFullFileName:%String,pFileHash:%String</FormalSpec>
+<FormalSpec>pTargetNamespace:%String,pFullFileName:%String,pFileHash:%String</FormalSpec>
 <Implementation><![CDATA[
 	Set tFullFileNameHash = $System.Encryption.SHA1Hash(pFullFileName)
-
-	If $Get(^|Namespace|CGCIFileHash(tFullFileNameHash))=pFileHash Return 0
+	If $Get(^CGCIFileHash(pTargetNamespace,tFullFileNameHash))=pFileHash Return 0
 
 	Return 1
 ]]></Implementation>
@@ -249,10 +265,10 @@ downloaded from the server. The idea is that on the next synchronization with Gi
 ProcessDirectory() will only queue for downloading files that are not registered (new files)
 or are registered but are different from the last download (changed files).</Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>tFileFullName:%String,tFileHash:%String</FormalSpec>
+<FormalSpec>pTargetNamespace:%String,tFileFullName:%String,tFileHash:%String</FormalSpec>
 <Implementation><![CDATA[
 	Set tFullFileNameHash = $System.Encryption.SHA1Hash(tFileFullName)
-	Set ^CGCIFileHash(tFullFileNameHash)=tFileHash
+	Set ^CGCIFileHash(pTargetNamespace,tFullFileNameHash)=tFileHash
 ]]></Implementation>
 </Method>
 
@@ -277,7 +293,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 <b>Request</b> - Authenticated/Set %Net.HttpRequest object.<br>
 <b>loadedlist</b> - Returns an array of the items loaded. ]]></Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Links:%ListOfDataTypes,Request:%Net.HttpRequest,*Items</FormalSpec>
+<FormalSpec>Links:%ListOfDataTypes,Request:%Net.HttpRequest,*Items,pTargetNamespace:%String="CGCI"</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Kill Items
@@ -285,6 +301,8 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	Set st = $$$OK
 	Try
 	{
+		Set tNS = $Namespace
+		
 		For i = 1:1:Links.Count()
 		{
 			Set link = $ListGet(Links.GetAt(i),1)
@@ -345,15 +363,26 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			Set stload = $$$OK
 
 			set items = ""
+			ZN pTargetNamespace
 			If ('$IsObject(characterStream)) || (..IsUDLFile(characterStream))
 			{
+				// LoadUDDLFile is mirror aware now. If we are on a secondary node of a mirror, that won't allow us to
+				// write into the database and the file on the link is a Caché file that is loaded
+				// inside the database (MAC, INT, CLS, DFI), it will simply skip it and return OK. If it is a HTML, JS,
+				// PNG, etc. file, that can sit outside the database, the file will be generated as usual. If it is a CSP file
+				// the file will be generated outside the database as usual but the Update() method won't be loading them into
+				// the database. That will be done by the primary mirror member when it downloads the file from github. 
 				Set stload = ..LoadUDLFile(characterStream, binarystream, link, .items)
 			}
 			ElseIf bIsCacheFile
 			{
+				//Unfortunately LoadStream will always verify if the database can be written and refrain
+				//to generate CSP, Js, Html, etc. files... So, working with XML will remain incompatible with mirroring.
 				Set stload = $system.OBJ.LoadStream(characterStream,"",.error,.items,,,,"UTF8")
 			}
-
+			
+			ZN tNS
+			
 	 		If $$$ISERR(stload)
 	 		{
 		 		Set st=$$$ADDSC(st, stload)
@@ -361,7 +390,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	 		}
 	 		Else
 	 		{
-		 		Do ..RegisterFileChanged(tFileFullName, tFileHash)
+		 		Do ..RegisterFileChanged(pTargetNamespace, tFileFullName, tFileHash)
 	 		}
 	 		Merge Items = items  // Does not overwrite existing array keys: Items(itemname)=""
 		}
@@ -372,7 +401,9 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	{
 		Set st = oException.AsStatus()
 	}
-
+	
+	ZN tNS
+	
 	Quit st
 ]]></Implementation>
 </Method>

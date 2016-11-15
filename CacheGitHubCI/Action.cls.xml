@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.Action">
 <Super>%SerialObject</Super>
-<TimeCreated>63599,80457.718702</TimeCreated>
+<TimeChanged>64232,71189</TimeChanged>
+<TimeCreated>64232,70928.524977</TimeCreated>
 
 <Property name="Type">
 <Description>
@@ -106,15 +107,12 @@ provide notification that the current object is being validated.
 <State>ActionState</State>
 <StreamLocation>^CacheGitHubCI.ActionS</StreamLocation>
 <Data name="ActionDefaultData">
-<Structure>listnode</Structure>
 <Subscript>"1"</Subscript>
 <Value name="1">
 <Value>%%CLASSNAME</Value>
 </Value>
 </Data>
 <Data name="ActionState">
-<Structure>listnode</Structure>
-<Subscript/>
 <Value name="1">
 <Value>Type</Value>
 </Value>

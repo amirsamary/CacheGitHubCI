@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-09-26 15:57:33">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 19:52:04">
 <Class name="CacheGitHubCI.UDL">
+<Description>
+2016-11-10 - Amir Samary - Updated LoadUDLFile() and CreateWebFile() to support mirroring.</Description>
 <Super>%RegisteredObject</Super>
-<TimeChanged>64184,40228.206874</TimeChanged>
-<TimeCreated>64160,57921.275282</TimeCreated>
+<TimeChanged>64232,71189</TimeChanged>
+<TimeCreated>64232,70931.608196</TimeCreated>
 
 <Method name="IsUDLFile">
 <Description><![CDATA[
@@ -180,29 +182,65 @@ Check whether a file is a web file
 Imports the file in UDL file in the project
 <b>contentStream</b> - the stream which contains the source code in udl format.<br>
 <b>url</b> - the url where the file is located in the web.<br>
-<b>list</b> - array of files to compile<br>]]></Description>
+<b>list</b> - array of files to compile<br>
+LoadUDDLFile is mirror aware now. If we are on a secondary node of a mirror, that won't allow us to
+write into the database and the file on the link is a Caché file that is loaded
+inside the database (MAC, INT, CLS, DFI), it will simply skip it and return OK. If it is a HTML, JS,
+PNG, etc. file, that can sit outside the database, the file will be generated as usual. If it is a CSP file
+the file will be generated outside the database as usual but the GitHub.Update() method won't be loading/compiling them into
+the database. That will be done by the primary mirror member when it downloads the file from github. ]]></Description>
 <ClassMethod>1</ClassMethod>
 <FormalSpec>contentStream:%GlobalCharacterStream,binaryStream:%Stream.FileCharacterGzip,url:%String,list:%String</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	set st = $$$OK
-
-	set ext = ..GetExt(url)
-
-	if ext = "cls" {
-		set st = ..CreateClass(contentStream, url, .list)
-	}
-	elseif ext = "dfi" {
-		set st = ..CreateDFI(contentStream, url, .list)
-	}
-	elseif (ext = "inc") || (ext = "mac") {
-		set st = ..CreateRoutine(contentStream, url, .list)
-	}
-	else
+	set tSC = $$$OK
+	Try
 	{
-		set st = ..CreateWebFile(contentStream, binaryStream, url, ext, .list)
+		set ext = ..GetExt(url)
+		
+		Set bDBReadWrite = ..CanWriteOnCurrentNS()
+		
+		if (ext = "cls") 
+		{
+			Set:bDBReadWrite tSC = ..CreateClass(contentStream, url, .list)
+		}
+		elseif (ext = "dfi") 
+		{
+			Set:bDBReadWrite tSC = ..CreateDFI(contentStream, url, .list)
+		}
+		elseif (ext = "inc") || (ext = "mac") 
+		{
+			Set:bDBReadWrite tSC = ..CreateRoutine(contentStream, url, .list)
+		}
+		else
+		{
+			set tSC = ..CreateWebFile(contentStream, binaryStream, url, ext, .list)
+		}
 	}
-	return st
+	Catch (oException)
+	{
+		Set tSC = oException.AsStatus()
+	}
+	
+	return tSC
+]]></Implementation>
+</Method>
+
+<Method name="CanWriteOnCurrentNS">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	Set bDBReadWrite=1
+	If $System.Mirror.IsMember() && '$System.Mirror.IsPrimary()
+	{
+		//If we are part of a mirror and we are not the primary, we can't write to the
+		//database. But, CGCI will be loading classes on the database on the primary member and we,
+		//as secondary member, will be receiving those. So, we must only load on the secondary
+		//member, files that stay outside of the database.
+		Set bDBReadWrite=0
+	}
+	
+	Quit bDBReadWrite
 ]]></Implementation>
 </Method>
 
