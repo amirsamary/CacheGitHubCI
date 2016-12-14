@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:03:55">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:14:35">
 <Class name="CacheGitHubCI.Hook">
 <Description>
 Hook tying GitHub repository and Cache Namespace.
 Create instance of the class, create webhook or task for updates and save the instance.</Description>
 <Super>%Persistent</Super>
-<TimeChanged>64266,67599.994541</TimeChanged>
+<TimeChanged>64266,68967.208474</TimeChanged>
 <TimeCreated>64232,70929.929792</TimeCreated>
 
 <Property name="Owner">
@@ -103,6 +103,7 @@ Result of latest update attempt:<br>
 successful - update successful <br>
 reverted  - update error, reverted to last successful commit ]]></Description>
 <Type>%String</Type>
+<Parameter name="VALUELIST" value=",Successful,Reverted,Unsuccessful and unreverted,"/>
 </Property>
 
 <Property name="KeepBrokenSourceOnError">
@@ -260,7 +261,7 @@ Check repository and update local namespace</Description>
 		Quit:$$$ISERR(tSC)
 		
 		Set myLastCommit = hook.Updates.GetPrevious("")
-		If ((hook.Updates.Count()>0) && (lastCommit.sha = myLastCommit.Commit) && (myLastCommit.UpdateSuccessful)) 
+		If ((hook.Updates.Count()>0) && (hook.LastUpdateStatus="Successful") && (lastCommit.sha = myLastCommit.Commit)) 
 		{	
 			// Our last commit is the same as the repository's last commit. We are up to date!
 			// Let's just update the hook to indicate the last time we checked:
@@ -348,14 +349,14 @@ Check repository and update local namespace</Description>
 	
 		Set hook.LastUpdateDateTime = $ZDT($NOW(),3,1,2)
 		
-		Set tSC = hook.%Save()
-		Quit:$System.Status.IsError(tSC)
+		Set tSC2 = hook.%Save()
+		Set tSC = $$$ADDSC(tSC, tSC2)
 		
 		JOB ##class(CacheGitHubCI.Cube).BuildCube()
 	}
 	Catch (oException)
 	{
-		Set tSC = oException.AsStatus()
+		Set tSC = $$$ADDSC(tSC,oException.AsStatus())
 	}
 	
 	Return tSC
