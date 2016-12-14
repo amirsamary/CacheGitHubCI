@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-22 18:03:49">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:03:55">
 <Class name="CacheGitHubCI.Hook">
 <Description>
 Hook tying GitHub repository and Cache Namespace.
 Create instance of the class, create webhook or task for updates and save the instance.</Description>
 <Super>%Persistent</Super>
-<TimeChanged>64244,64980.666665</TimeChanged>
+<TimeChanged>64266,67599.994541</TimeChanged>
 <TimeCreated>64232,70929.929792</TimeCreated>
 
 <Property name="Owner">
@@ -259,7 +259,8 @@ Check repository and update local namespace</Description>
 		Set tSC = ##class(CacheGitHubCI.GitHub).GetLastCommit(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,.lastCommit)
 		Quit:$$$ISERR(tSC)
 		
-		If ((hook.Updates.Count()>0) && (lastCommit.sha = hook.Updates.GetPrevious("").Commit)) 
+		Set myLastCommit = hook.Updates.GetPrevious("")
+		If ((hook.Updates.Count()>0) && (lastCommit.sha = myLastCommit.Commit) && (myLastCommit.UpdateSuccessful)) 
 		{	
 			// Our last commit is the same as the repository's last commit. We are up to date!
 			// Let's just update the hook to indicate the last time we checked:
@@ -277,32 +278,49 @@ Check repository and update local namespace</Description>
 		// Let's run the PreCompile code before we start downloading and compiling classes from github:
 		Write !,"PreCompile()"
 		Set update.PreCompileStatus = hook.PreCompile.Execute()
-		If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.PreCompileStatus))
+		Write !,"PreCompileStatus: ",update.PreCompileStatus
+		
+		Do
 		{
-			// If PreCompileStatus is OK or, if it isn't but we don't care, we can go on and/
-			// start downloading stuff from github. The Update() method downloads and compiles everything:
-			Write !,"Update()"
-			Set update.CompileStatus = ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,hook.Namespace)
+			If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.PreCompileStatus))
+			{
+				// If PreCompileStatus is OK or, if it isn't but we don't care, we can go on and/
+				// start downloading stuff from github. The Update() method downloads and compiles everything:
+				Write !,"Update()"
+				Set update.CompileStatus = ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,hook.Namespace)
+				Write !,"CompileStatus: ",update.CompileStatus
+			}
+			Else
+			{
+				Quit
+			}
+			
+			If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.CompileStatus))
+			{
+				Write !,"PostCompile()"
+				// If CompileStatus is OK or, if it isn't but we don't care, we can execute PostCompile
+				Set update.PostCompileStatus = hook.PostCompile.Execute()
+				Write !,"PostCompileStatus: ",update.PostCompileStatus
+			}
+			Else
+			{
+				Quit
+			}
+
+			If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.PostCompileStatus))
+			{
+				Write !,"UnitTests()"
+				// If PostCompileStatus is OK or, if it isn't but we don't care, we can execute UnitTests
+				Set update.UnitTestsStatus = hook.UnitTests.Execute()
+				Write !,"UnitTestsStatus: ",update.UnitTestsStatus
+			}
+			Else
+			{
+				Quit
+			}
 		}
-		
-		Write !,"CompileStatus: ",update.CompileStatus
-		If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.CompileStatus))
-		{
-			Write !,"PostCompile()"
-			// If CompileStatus is OK or, if it isn't but we don't care, we can execute PostCompile
-			Set update.PostCompileStatus = hook.PostCompile.Execute()
-		}
-		
-		Write !,"PostCompileStatus: ",update.PostCompileStatus
-		If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.PostCompileStatus))
-		{
-			Write !,"UnitTests()"
-			// If PostCompileStatus is OK or, if it isn't but we don't care, we can execute UnitTests
-			Set update.UnitTestsStatus = hook.UnitTests.Execute()
-		}
-		
-		Write !,"UnitTestsStatus: ",update.UnitTestsStatus
-		
+		While 0
+				
 		Set tSC = hook.AddHookUpdate(update)
 		Quit:$System.Status.IsError(tSC)
 		

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 23:00:00">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:03:55">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64232,71189</TimeChanged>
+<TimeChanged>64266,68188.304369</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -170,13 +170,13 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 		Set tSC = ..DownloadFiles(links,req,.list,Namespace)
 		Quit:$System.Status.IsError(tSC)
 		
-		Set bDBReadWrite = ..CanWriteOnCurrentNS()
-		If bDBReadWrite
-		{
+		//Set bDBReadWrite = ..CanWriteOnCurrentNS()
+		//If bDBReadWrite
+		//{
 			Zn Namespace
 
 			Set tSC = $system.OBJ.CompileList(.list,"cuk /checkuptodate=expandedonly")
-		}
+		//}
 	}
 	Catch (oException)
 	{

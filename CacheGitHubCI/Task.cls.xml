@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-15 23:00:00">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:03:55">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64237,82716.588311</TimeChanged>
+<TimeChanged>64266,65078.957123</TimeChanged>
 <TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
@@ -120,6 +120,32 @@ This method can be called directly by anyone that needs to update a namespace in
 	}
 	
 	Quit tSC
+]]></Implementation>
+</Method>
+
+<Method name="ShellUpdate">
+<Description>
+This method is available to be called from csession INSTANCE -UCGCI </Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String</FormalSpec>
+<Implementation><![CDATA[
+	Set tSC = ..Update(pGitHubUrl, pUserName, pPassword, pBranch, pNamespace, pConfigureActions, pActionClassName)
+	
+	If $System.Status.IsError(tSC)
+	{
+		Do $System.Status.DisplayError(tSC)
+		
+		Set $zerror = $System.Status.GetErrorText(tSC)
+		
+		Do LOG^%ETN
+
+		Do $System.Process.Terminate(0)
+	}
+	Else
+	{
+		Write !,"OK!"
+		Do $System.Process.Terminate(1)
+	}
 ]]></Implementation>
 </Method>
 </Class>

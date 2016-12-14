@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-11-22 18:03:49">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:03:55">
 <Class name="CacheGitHubCI.Update">
 <Description>
 2016-11-10 - Amir - Changed PreCompileStatus, CompileStatus, PostCompileStatus and UnitTestStatus from %String to %Status
 				    with a default value of 1 (stauts ok!) to support the new property KeepBrokenSourceOnError on the Hook class.</Description>
 <Super>%Persistent</Super>
-<TimeChanged>64244,60955.508222</TimeChanged>
+<TimeChanged>64266,67558.721556</TimeChanged>
 <TimeCreated>64232,70932.055199</TimeCreated>
 
 <Property name="Hook">
@@ -63,6 +63,17 @@
 <Type>%Status</Type>
 <InitialExpression>1</InitialExpression>
 </Property>
+
+<Property name="UpdateSuccessful">
+<Type>%Boolean</Type>
+<Calculated>1</Calculated>
+</Property>
+
+<Method name="UpdateSuccessfulGet">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	Quit $$$ISOK(..PreCompileStatus) && $$$ISOK(..CompileStatus) && $$$ISOK(..PostCompileStatus) && $$$ISOK(..UnitTestsStatus)
+]]></Implementation>
+</Method>
 
 <Method name="%OnAddToSaveSet">
 <Description><![CDATA[
