@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2016-12-14 19:14:35">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-09 15:31:24">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64266,68188.304369</TimeChanged>
+<TimeChanged>64292,54129.939825</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -164,19 +164,18 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/contents" 	// as described in https://developer.github.com/v3/repos/
 
 		Set links = ##class(%ListOfDataTypes).%New()
+		
+		Write !,"Process directory..."
 		Set tSC = ..ProcessDirectory("",.req,Branch,Namespace,.links)
 		Quit:$System.Status.IsError(tSC)
-
+		
+		Write !,"Downloading files..."
 		Set tSC = ..DownloadFiles(links,req,.list,Namespace)
 		Quit:$System.Status.IsError(tSC)
 		
-		//Set bDBReadWrite = ..CanWriteOnCurrentNS()
-		//If bDBReadWrite
-		//{
-			Zn Namespace
-
-			Set tSC = $system.OBJ.CompileList(.list,"cuk /checkuptodate=expandedonly")
-		//}
+		Zn Namespace
+		Write !,"Compiling classes..."
+		Set tSC = $system.OBJ.CompileList(.list,"cuk /checkuptodate=expandedonly")
 	}
 	Catch (oException)
 	{
@@ -303,13 +302,16 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	{
 		Set tNS = $Namespace
 		
+		Write !,"DonwloadFiles - > Links.Count: ",Links.Count()
+		
 		For i = 1:1:Links.Count()
 		{
 			Set link = $ListGet(Links.GetAt(i),1)
 			Set bIsCacheFile = $ListGet(Links.GetAt(i),2)
 			Set tFileFullName = $ListGet(Links.GetAt(i),3)
 			Set tFileHash = $ListGet(Links.GetAt(i),4)
-
+			
+			Write !!,tFileFullName
 			Set streq = Request.Get($e(link,35,*)) // Remove "https://raw.githubusercontent.com/" from URL.
 			If $$$ISERR(streq)
 			{
@@ -366,6 +368,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			ZN pTargetNamespace
 			If ('$IsObject(characterStream)) || (..IsUDLFile(characterStream))
 			{
+				Write " - UDL"
 				// LoadUDDLFile is mirror aware now. If we are on a secondary node of a mirror, that won't allow us to
 				// write into the database and the file on the link is a Caché file that is loaded
 				// inside the database (MAC, INT, CLS, DFI), it will simply skip it and return OK. If it is a HTML, JS,
@@ -376,6 +379,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			}
 			ElseIf bIsCacheFile
 			{
+				Write " - XML"
 				//Unfortunately LoadStream will always verify if the database can be written and refrain
 				//to generate CSP, Js, Html, etc. files... So, working with XML will remain incompatible with mirroring.
 				Set stload = $system.OBJ.LoadStream(characterStream,"",.error,.items,,,,"UTF8")
@@ -399,6 +403,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	}
 	Catch (oException)
 	{
+		Write !,"EXCEPTION on ##class(CacheGitHubCI.GitHub).DownloadFiles()"
 		Set st = oException.AsStatus()
 	}
 	
