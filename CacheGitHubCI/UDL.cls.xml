@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 23:37:41">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 23:49:03">
 <Class name="CacheGitHubCI.UDL">
 <Super>%RegisteredObject</Super>
-<TimeChanged>64313,85022.40077</TimeChanged>
+<TimeChanged>64313,85710.456863</TimeChanged>
 <TimeCreated>64232,70931.608196</TimeCreated>
 
 <Method name="IsUDLFile">
@@ -413,7 +413,13 @@ Creates and imports mac, int, inc files into the project from stream
 		// 7- Atelier project name
 		// 8- Atelier file type (CSP)
 		
-		set tFullCSPFileName = "/"_$Piece($Piece(url, "/", 9, *),"?")		
+		If (url["/.gitattributes") || (url["/.gitignore") || (url["/.settings")
+		{
+			Write !,"Ignoring file on url '"_url_"'."
+			Quit
+		}
+
+		set tFullCSPFileName = "/"_$Piece($Piece(url, "/", 9, *),"?")
 		Set tFullPhysicalFileName = $system.CSP.GetFileName(tFullCSPFileName)
 		If tFullPhysicalFileName["/"
 		{
@@ -424,13 +430,7 @@ Creates and imports mac, int, inc files into the project from stream
 			Set tSeparator="\"
 		}
 		set tPhysicalPath = $Piece(tFullPhysicalFileName,tSeparator,1,*-1)_tSeparator
-		
 		Set tFileName = $Piece(tFullCSPFileName,"/",*)
-		If ",.gitattributes,.gitignore,.settings"[(","_tFileName_",")
-		{
-			Write !,"Ignoring file ",tFullCSPFileName
-			Quit
-		}
 		Set tFileExtension = $ZConvert($Piece(tFileName,".",*),"L")
 
 		If '##class(%File).CreateDirectoryChain(tPhysicalPath)
