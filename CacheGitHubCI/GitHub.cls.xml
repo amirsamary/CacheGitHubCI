@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-09 15:31:24">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 22:45:41">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64292,54129.939825</TimeChanged>
+<TimeChanged>64313,81889.621014</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -175,7 +175,7 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 		
 		Zn Namespace
 		Write !,"Compiling classes..."
-		Set tSC = $system.OBJ.CompileList(.list,"cuk /checkuptodate=expandedonly")
+		Set tSC = $system.OBJ.CompileList(.list,"cuky /checkuptodate=expandedonly")
 	}
 	Catch (oException)
 	{
