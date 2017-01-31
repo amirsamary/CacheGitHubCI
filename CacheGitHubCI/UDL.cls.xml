@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 22:36:07">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 23:28:54">
 <Class name="CacheGitHubCI.UDL">
 <Super>%RegisteredObject</Super>
-<TimeChanged>64313,81342.772734</TimeChanged>
+<TimeChanged>64313,84488.071784</TimeChanged>
 <TimeCreated>64232,70931.608196</TimeCreated>
 
 <Method name="IsUDLFile">
@@ -467,7 +467,12 @@ Creates and imports mac, int, inc files into the project from stream
 	{
 		Set st = oException.AsStatus()
 	}
-
+	
+	If $System.Status.IsError(st) && ($Get(tFullCSPFileName)'="")
+	{
+		Write !,"Error while importing " _ tFullCSPFileName
+	}
+	
 	Quit st
 ]]></Implementation>
 </Method>
