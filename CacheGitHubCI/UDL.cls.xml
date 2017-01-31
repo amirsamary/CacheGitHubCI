@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 19:29:35">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 22:36:07">
 <Class name="CacheGitHubCI.UDL">
 <Super>%RegisteredObject</Super>
-<TimeChanged>64313,70133.802277</TimeChanged>
+<TimeChanged>64313,81342.772734</TimeChanged>
 <TimeCreated>64232,70931.608196</TimeCreated>
 
 <Method name="IsUDLFile">
@@ -413,11 +413,19 @@ Creates and imports mac, int, inc files into the project from stream
 		// 7- Atelier project name
 		// 8- Atelier file type (CSP)
 		
-		set tFullFileName = "/"_$Piece($Piece(url, "/", 9, *),"?")		
-		set tPhysicalPath = $Piece($system.CSP.GetFileName(tFullFileName),"/",1,*-1)_"/"
-		Set tFileName = $Piece(tFullFileName,"/",*)
-		Set tFullPhysicalFileName = tPhysicalPath_tFileName
-
+		set tFullCSPFileName = "/"_$Piece($Piece(url, "/", 9, *),"?")		
+		Set tFullPhysicalFileName = $system.CSP.GetFileName(tFullCSPFileName)
+		If tFullPhysicalFileName["/"
+		{
+			Set tSeparator="/"
+		}
+		Else
+		{
+			Set tSeparator="\"
+		}
+		set tPhysicalPath = $Piece(tFullPhysicalFileName,tSeparator,1,*-1)_tSeparator
+		
+		Set tFileName = $Piece(tFullCSPFileName,"/",*)
 		Set tFileExtension = $ZConvert($Piece(tFileName,".",*),"L")
 
 		If '##class(%File).CreateDirectoryChain(tPhysicalPath)
@@ -450,10 +458,10 @@ Creates and imports mac, int, inc files into the project from stream
 		// If this CSP file is a "csp" file, then we must queue it for compilation.
 		If tFileExtension="csp"
 		{
-			Set list(tFullFileName)=""
+			Set list(tFullCSPFileName)=""
 		}
 
-		Write !, "Imported " _ tFullFileName, !
+		Write !, "Imported " _ tFullCSPFileName, !
 	}
 	Catch (oException)
 	{
