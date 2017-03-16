@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-30 22:45:41">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64313,81889.621014</TimeChanged>
+<TimeChanged>64358,43245.921134</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -16,7 +16,7 @@
 
 <Method name="CreateRequest">
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Username:%String,Password:%String</FormalSpec>
+<FormalSpec>Username:%String,Password:%String,pProxy:%String=""</FormalSpec>
 <ReturnType>%Net.HttpRequest</ReturnType>
 <Implementation><![CDATA[
 	Set namespace = $Namespace
@@ -28,6 +28,12 @@
 
  	Set req=##class(%Net.HttpRequest).%New()
  	Set req.Https=1
+ 	If pProxy'=""
+ 	{
+	 		Set req.ProxyServer=$Piece(pProxy,":",1)
+	 		Set req.ProxyPort=$Piece(pProxy,":",2)
+ 	}
+
 	Set req.SSLConfiguration=SSLConfig
 	Set req.Server="api.github.com"
 	Do req.SetHeader("Accept","application/vnd.github.v3+json") 			// we want 3rd version of api
@@ -43,11 +49,11 @@
 
 <Method name="CreateHook">
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",Namespace=$Namespace,*HookId</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",Namespace=$Namespace,pProxy:%String="",*HookId</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	#dim req As %Net.HttpRequest
-	Set req = ..CreateRequest(Username, Password)
+	Set req = ..CreateRequest(Username, Password, pProxy)
 	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks"
 
 	Set hook = ##class(%ZEN.proxyObject).%New()
@@ -76,11 +82,11 @@
 
 <Method name="DeleteHook">
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",HookId:%Integer</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",HookId:%Integer,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	#dim req As %Net.HttpRequest
-	Set req = ..CreateRequest(Username, Password)
+	Set req = ..CreateRequest(Username, Password, pProxy)
 	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks/" _ HookId
 
 	Set st = req.Send("DELETE","")
@@ -96,10 +102,10 @@
 
 <Method name="GetHooks">
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",Namespace=$Namespace,*Hooks</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",Namespace=$Namespace,*Hooks,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	Set req = ..CreateRequest(Username, Password)
+	Set req = ..CreateRequest(Username, Password, pProxy)
 	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks"
 
 	Set st = req.Get()
@@ -116,11 +122,11 @@
 
 <Method name="GetLastCommit">
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Owner:%String,Repository:%String,Branch:%String="master",Username:%String="",Password:%String="",*Commit:%ZEN.proxyObject</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Branch:%String="master",Username:%String="",Password:%String="",pProxy:%String="",*Commit:%ZEN.proxyObject</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	kill Commit
-	Set req = ..CreateRequest(Username, Password)
+	Set req = ..CreateRequest(Username, Password, pProxy)
 	Set:(Branch="") Branch="HEAD" // Branch does not automatically elevates to master
 	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/commits/" _ Branch
 
@@ -151,7 +157,7 @@ Unauthenticated requests are associated with an IP address.<br>
 For example in the repository: https://github.com/intersystems-ru/Cache-MDX2JSON<br>
 Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Owner:%String,Repository:%String,Branch:%String="",Username:%String="",Password:%String="",Namespace=$Namespace</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Branch:%String="",Username:%String="",Password:%String="",Namespace=$Namespace,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	#dim req As %Net.HttpRequest
@@ -160,7 +166,7 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 	{
 		Set tCGCINamespace = $Namespace
 		
-		Set req = ..CreateRequest(Username, Password)
+		Set req = ..CreateRequest(Username, Password, pProxy)
 		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/contents" 	// as described in https://developer.github.com/v3/repos/
 
 		Set links = ##class(%ListOfDataTypes).%New()

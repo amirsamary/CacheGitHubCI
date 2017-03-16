@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-09 15:31:24">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64266,65078.957123</TimeChanged>
+<TimeChanged>64358,43468.678827</TimeChanged>
 <TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
@@ -45,6 +45,12 @@ Namespace, where to download and compile repository</Description>
 <InitialExpression>$Namespace</InitialExpression>
 </Property>
 
+<Property name="Proxy">
+<Description>
+Proxy configuration with format IP:Port</Description>
+<Type>%String</Type>
+</Property>
+
 <Property name="ConfigureActions">
 <Description>
 If no actions are defined for the hook representing this task and this flag is TRUE,
@@ -65,7 +71,7 @@ default actions automatically.</Description>
 
 <Method name="OnTask">
 <ReturnType>%Status</ReturnType>
-<Implementation><![CDATA[	Quit ..Update(..GitHubURL, ..Username, ..Password, ..Branch, ..Namespace, ..ConfigureActions, ..ActionClassName)
+<Implementation><![CDATA[	Quit ..Update(..GitHubURL, ..Username, ..Password, ..Branch, ..Namespace, ..ConfigureActions, ..ActionClassName, ..Proxy)
 ]]></Implementation>
 </Method>
 
@@ -73,7 +79,7 @@ default actions automatically.</Description>
 <Description>
 This method can be called directly by anyone that needs to update a namespace interactively</Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String</FormalSpec>
+<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Set tSC = $System.Status.OK()
@@ -92,7 +98,7 @@ This method can be called directly by anyone that needs to update a namespace in
 		
 		If ('##class(CacheGitHubCI.Hook).%ExistsId(tHookId)) 
 		{
-			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,pBranch,pUserName,pPassword,tNamespace,1)
+			Set hook = ##class(CacheGitHubCI.Hook).%New(tOwner,tRepository,pBranch,pUserName,pPassword,tNamespace,1, pProxy)
 			Quit:$System.Status.IsError(tSC)
 		}
 		Else
@@ -112,7 +118,7 @@ This method can be called directly by anyone that needs to update a namespace in
 			Quit:$System.Status.IsError(tSC)
 		}
 		
-		Set tSC = ##class(CacheGitHubCI.Hook).Update(tOwner,tRepository,tNamespace)
+		Set tSC = ##class(CacheGitHubCI.Hook).Update(tOwner,tRepository,tNamespace, pProxy)
 	}
 	Catch (oException)
 	{
@@ -127,9 +133,9 @@ This method can be called directly by anyone that needs to update a namespace in
 <Description>
 This method is available to be called from csession INSTANCE -UCGCI </Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String</FormalSpec>
+<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String,pProxy:%String</FormalSpec>
 <Implementation><![CDATA[
-	Set tSC = ..Update(pGitHubUrl, pUserName, pPassword, pBranch, pNamespace, pConfigureActions, pActionClassName)
+	Set tSC = ..Update(pGitHubUrl, pUserName, pPassword, pBranch, pNamespace, pConfigureActions, pActionClassName, pProxy)
 	
 	If $System.Status.IsError(tSC)
 	{

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-09 15:31:24">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
 <Class name="CacheGitHubCI.Hook">
 <Description>
 Hook tying GitHub repository and Cache Namespace.
 Create instance of the class, create webhook or task for updates and save the instance.</Description>
 <Super>%Persistent</Super>
-<TimeChanged>64266,68967.208474</TimeChanged>
+<TimeChanged>64358,43321.599935</TimeChanged>
 <TimeCreated>64232,70929.929792</TimeCreated>
 
 <Property name="Owner">
@@ -35,6 +35,12 @@ Namespace, where to download and compile repository</Description>
 <Property name="Branch">
 <Description>
 Repository branch, usually master. Leave empty, if you want to receive default branch.</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="Proxy">
+<Description>
+Proxy configuration with format IP:Port</Description>
 <Type>%String</Type>
 </Property>
 
@@ -121,7 +127,7 @@ is preserved for backward compatibility.</Description>
 <Method name="%OnNew">
 <Description>
 Set main variables, if provided.</Description>
-<FormalSpec>Owner:%String,Repository:%String,Branch:%String,Username:%String,Password:%String,Namespace=$Namespace,KeepBrokenSourceOnError:%Boolean=0</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Branch:%String,Username:%String,Password:%String,Namespace=$Namespace,KeepBrokenSourceOnError:%Boolean=0,pProxy:%String=""</FormalSpec>
 <Private>1</Private>
 <ReturnType>%Status</ReturnType>
 <ServerOnly>1</ServerOnly>
@@ -132,6 +138,7 @@ Set main variables, if provided.</Description>
 	Set:$d(Branch) ..Branch = Branch
 	Set:$d(Username) ..Username = Username
 	Set:$d(Password) ..Password = Password
+	Set:$d(pProxy) ..Proxy = pProxy
 	Set ..KeepBrokenSourceOnError=KeepBrokenSourceOnError
 	
 	Quit $$$OK
@@ -173,7 +180,7 @@ Create GitHub webhook, if we have admin access to repository.</Description>
 <Implementation><![CDATA[
 	Return:$ISVALIDNUM(..HookId) $$$ERROR($$$GeneralError, "Hook already exists")
 	Set HookId = ""
-	Set st = ##class(CacheGitHubCI.GitHub).CreateHook(..Owner,..Repository, ..Username, ..Password, ..Namespace, .HookId)
+	Set st = ##class(CacheGitHubCI.GitHub).CreateHook(..Owner,..Repository, ..Username, ..Password, ..Namespace, ..Proxy, .HookId)
 	Return:$$$ISERR(st) st
 	Set:$ISVALIDNUM(HookId) ..HookId = HookId
 	Return $ISVALIDNUM(HookId)
@@ -186,7 +193,7 @@ Delete GitHub webhook, if one exists.</Description>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Return:(..HookId="") $$$ERROR($$$GeneralError, "Hook does not exist")
-	Set st = ##class(CacheGitHubCI.GitHub).DeleteHook(..Owner,..Repository, ..Username, ..Password, ..HookId)
+	Set st = ##class(CacheGitHubCI.GitHub).DeleteHook(..Owner,..Repository, ..Username, ..Password, ..HookId, ..Proxy)
 	Return:$$$ISERR(st) st
 	Set ..HookId = ""
 	Return $$$OK
@@ -240,7 +247,7 @@ Delete update task</Description>
 <Description>
 Check repository and update local namespace</Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Owner:%String,Repository:%String,Namespace=$Namespace</FormalSpec>
+<FormalSpec>Owner:%String,Repository:%String,Namespace=$Namespace,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
  	#dim hook As CacheGitHubCI.Hook
@@ -257,7 +264,7 @@ Check repository and update local namespace</Description>
 		Set hook = ..GetObject(Owner,Repository,Namespace)
 		
 		Set lastCommit = ##class(%ZEN.proxyObject).%New()
-		Set tSC = ##class(CacheGitHubCI.GitHub).GetLastCommit(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,.lastCommit)
+		Set tSC = ##class(CacheGitHubCI.GitHub).GetLastCommit(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password, pProxy, .lastCommit)
 		Quit:$$$ISERR(tSC)
 		
 		Set myLastCommit = hook.Updates.GetPrevious("")
@@ -288,7 +295,7 @@ Check repository and update local namespace</Description>
 				// If PreCompileStatus is OK or, if it isn't but we don't care, we can go on and/
 				// start downloading stuff from github. The Update() method downloads and compiles everything:
 				Write !,"Update()"
-				Set update.CompileStatus = ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,hook.Namespace)
+				Set update.CompileStatus = ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,hook.Namespace, pProxy)
 				Write !,"CompileStatus: ",update.CompileStatus
 			}
 			Else
@@ -332,7 +339,7 @@ Check repository and update local namespace</Description>
 			Set hook.LastUpdateStatus = "Reverted"
 			Set successcommit = ##class(CacheGitHubCI.Update).GetLastSuccessfulCommit(Owner,Repository,Namespace) 
 			do hook.PreCompile.Execute()
-			do ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,successcommit,hook.Username,hook.Password,hook.Namespace)
+			do ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,successcommit,hook.Username,hook.Password,hook.Namespace, pProxy)
 			do hook.PostCompile.Execute()
 			do hook.UnitTests.Execute()
 		} 
@@ -460,6 +467,9 @@ Check repository and update local namespace</Description>
 </Value>
 <Value name="19">
 <Value>KeepBrokenSourceOnError</Value>
+</Value>
+<Value name="20">
+<Value>Proxy</Value>
 </Value>
 </Data>
 </Storage>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-09 15:31:24">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
 <Class name="CacheGitHubCI.Install">
-<TimeChanged>64187,66904.891442</TimeChanged>
+<TimeChanged>64358,42865.189872</TimeChanged>
 <TimeCreated>63613,47857.460994</TimeCreated>
 
 <XData name="Install">
@@ -118,7 +118,7 @@ Determine Namespace databease resource.</Description>
 <Method name="GetBranch">
 <ClassMethod>1</ClassMethod>
 <FormalSpec>pVars</FormalSpec>
-<ReturnType>%Status</ReturnType>
+<ReturnType>%String</ReturnType>
 <Implementation><![CDATA[    Return $get(pVars("Branch"), "master")
 ]]></Implementation>
 </Method>
@@ -126,8 +126,16 @@ Determine Namespace databease resource.</Description>
 <Method name="GetRepository">
 <ClassMethod>1</ClassMethod>
 <FormalSpec>pVars</FormalSpec>
-<ReturnType>%Status</ReturnType>
+<ReturnType>%String</ReturnType>
 <Implementation><![CDATA[    Return $get(pVars("Repository"), "intersystems-ru")
+]]></Implementation>
+</Method>
+
+<Method name="GetProxy">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pVars</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    Return $get(pVars("Proxy"), "")
 ]]></Implementation>
 </Method>
 
@@ -139,8 +147,9 @@ Determine Namespace databease resource.</Description>
     Set Namespace=tInstaller.Evaluate("${Namespace}")
     Set Branch = ..GetBranch(.pVars)
     Set Repository = ..GetRepository(.pVars)
+    Set tProxy = ..GetProxy(.pVars)
     Do tInstaller.PushNS("%SYS")
-    Set tSC = ..Update(Namespace, Repository, "CacheGitHubCI", Branch)
+    Set tSC = ..Update(Namespace, Repository, "CacheGitHubCI", Branch, tProxy)
     Do tInstaller.PopNS()
     If $$$ISERR(tSC) Throw ##class(%Installer.Exception).CreateFromStatus(tSC)
     quit $$$OK
@@ -163,7 +172,7 @@ Downloads and compiles GitHub repository.<br>
  For example in the repository: https://github.com/intersystems-ru/Cache-MDX2JSON<br>
  Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>Namespace=$Namespace,Owner:%String="intersystems-ru",Repository:%String="CacheGitHubCI",Branch:%String,Username:%String,Password:%String</FormalSpec>
+<FormalSpec>Namespace=$Namespace,Owner:%String="intersystems-ru",Repository:%String="CacheGitHubCI",Branch:%String,Username:%String,Password:%String,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	Set namespace = $Namespace
@@ -174,6 +183,11 @@ Downloads and compiles GitHub repository.<br>
 
  	Set req=##class(%Net.HttpRequest).%New()
  	Set req.Https=1
+ 	If pProxy'=""
+ 	{
+	 		Set req.ProxyServer=$Piece(pProxy,":",1)
+	 		Set req.ProxyPort=$Piece(pProxy,":",2)
+ 	}
 	Set req.SSLConfiguration=SSLConfig
 	Set req.Server="api.github.com"
 	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/contents" 	// as described in https://developer.github.com/v3/repos/	
