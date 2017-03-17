@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 21:18:24">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64358,43468.678827</TimeChanged>
+<TimeChanged>64358,76647.491896</TimeChanged>
 <TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
@@ -133,10 +133,18 @@ This method can be called directly by anyone that needs to update a namespace in
 <Description>
 This method is available to be called from csession INSTANCE -UCGCI </Description>
 <ClassMethod>1</ClassMethod>
-<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String,pProxy:%String</FormalSpec>
+<FormalSpec>pGitHubUrl:%String,pUserName:%String,pPassword:%String,pBranch:%String,pNamespace:%String,pConfigureActions:%Boolean,pActionClassName:%String,pProxy:%String=""</FormalSpec>
 <Implementation><![CDATA[
-	Set tSC = ..Update(pGitHubUrl, pUserName, pPassword, pBranch, pNamespace, pConfigureActions, pActionClassName, pProxy)
-	
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		Set tSC = ..Update(pGitHubUrl, pUserName, pPassword, pBranch, pNamespace, pConfigureActions, pActionClassName, pProxy)
+	}
+	Catch (oException)
+	{
+		Set tSC = oException.AsStatus()
+	}
+		
 	If $System.Status.IsError(tSC)
 	{
 		Do $System.Status.DisplayError(tSC)
