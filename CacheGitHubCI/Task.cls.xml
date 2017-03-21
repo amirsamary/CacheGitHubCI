@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 21:18:24">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-20 23:18:38">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64358,76647.491896</TimeChanged>
+<TimeChanged>64362,83907.206849</TimeChanged>
 <TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
@@ -85,6 +85,8 @@ This method can be called directly by anyone that needs to update a namespace in
 	Set tSC = $System.Status.OK()
 	Try
 	{		
+		set ^%SYS("CSP","DefaultFileCharset")="utf-8"
+		
 		If '##class(%SYS.Namespace).Exists(pNamespace) 
 		{
 			Set tSC = $$$ERROR($$$NamespaceUnavailable,pNamespace)
