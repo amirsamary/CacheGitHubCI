@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-20 23:16:26">
 <Class name="CacheGitHubCI.Install">
-<TimeChanged>64358,42865.189872</TimeChanged>
+<TimeChanged>64362,83744.50877</TimeChanged>
 <TimeCreated>63613,47857.460994</TimeCreated>
 
 <XData name="Install">
@@ -57,7 +57,9 @@ do ##class(CacheGitHubCI.Install).setup(.pVars)</Description>
 <CodeMode>objectgenerator</CodeMode>
 <FormalSpec><![CDATA[&pVars,pLogLevel:%Integer=3,pInstaller:%Installer.Installer,pLogger:%Installer.AbstractLogger]]></FormalSpec>
 <ReturnType>%Status</ReturnType>
-<Implementation><![CDATA[ 	Quit ##class(%Installer.Manifest).%Generate(%compiledclass, %code, "Install")
+<Implementation><![CDATA[
+	set ^%SYS("CSP","DefaultFileCharset")="utf-8"
+ 	Quit ##class(%Installer.Manifest).%Generate(%compiledclass, %code, "Install")
 ]]></Implementation>
 </Method>
 
@@ -187,6 +189,7 @@ Downloads and compiles GitHub repository.<br>
  	{
 	 		Set req.ProxyServer=$Piece(pProxy,":",1)
 	 		Set req.ProxyPort=$Piece(pProxy,":",2)
+	 		Set req.ProxyHTTPS=1
  	}
 	Set req.SSLConfiguration=SSLConfig
 	Set req.Server="api.github.com"

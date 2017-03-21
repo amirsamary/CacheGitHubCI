@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-20 23:16:26">
 <Class name="CacheGitHubCI.UDL">
 <Super>%RegisteredObject</Super>
-<TimeChanged>64314,59718.069411</TimeChanged>
+<TimeChanged>64362,83675.495641</TimeChanged>
 <TimeCreated>64232,70931.608196</TimeCreated>
 
 <Method name="IsUDLFile">
@@ -443,6 +443,7 @@ Creates and imports mac, int, inc files into the project from stream
 		If $IsObject(contentStream) && ..IsWebFile(ext)
 		{
 			Set filestream = ##class(%Stream.FileCharacter).%New()
+			Set filestream.TranslateTable="UTF8"
 			set st = filestream.LinkToFile(tFullPhysicalFileName)
 			Quit:$System.Status.IsError(st)
 
