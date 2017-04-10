@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-04-10 19:43:24">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64358,43245.921134</TimeChanged>
+<TimeChanged>64383,70926.790845</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -32,6 +32,7 @@
  	{
 	 		Set req.ProxyServer=$Piece(pProxy,":",1)
 	 		Set req.ProxyPort=$Piece(pProxy,":",2)
+	 		Set req.ProxyHTTPS=1
  	}
 
 	Set req.SSLConfiguration=SSLConfig
@@ -181,7 +182,7 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 		
 		Zn Namespace
 		Write !,"Compiling classes..."
-		Set tSC = $system.OBJ.CompileList(.list,"cuky /checkuptodate=expandedonly")
+		Set tSC = $system.OBJ.CompileList(.list,"brucky /checkuptodate=expandedonly")
 	}
 	Catch (oException)
 	{
