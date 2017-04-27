@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-04-10 19:43:24">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64383,70926.790845</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -19,6 +18,7 @@
 <FormalSpec>Username:%String,Password:%String,pProxy:%String=""</FormalSpec>
 <ReturnType>%Net.HttpRequest</ReturnType>
 <Implementation><![CDATA[
+	#Dim req As %Net.HttpRequest
 	Set namespace = $Namespace
  	Set SSLConfig = "GitHub"
 
@@ -33,6 +33,7 @@
 	 		Set req.ProxyServer=$Piece(pProxy,":",1)
 	 		Set req.ProxyPort=$Piece(pProxy,":",2)
 	 		Set req.ProxyHTTPS=1
+	 		Set req.ProxyTunnel=1
  	}
 
 	Set req.SSLConfiguration=SSLConfig
