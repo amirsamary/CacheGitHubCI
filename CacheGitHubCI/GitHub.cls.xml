@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25">
+<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-04-27 19:25:00">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
+<TimeChanged>64400,69490.657525</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -227,7 +228,14 @@ Process one directory of GitHub repository. Recursive.<br>
 		Set obj = objects.GetAt(i)
 		If (obj.type = "dir")
 		{
-			Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,pTargetNamespace,.Links)
+			If $Extract(obj.name)'="."
+			{
+				Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,pTargetNamespace,.Links)
+			}
+			Else
+			{
+				Write !,"Ignoring hidden directory ",Request.Location _ Path_"/"_obj.name,"..."
+			}
 			Return:$$$ISERR(st) st
 		}
 		ElseIf (obj.type = "file")
