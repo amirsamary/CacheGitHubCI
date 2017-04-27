@@ -148,9 +148,11 @@ Determine Namespace databease resource.</Description>
     Set tBranch = ..GetBranch(.pVars)
     Set tRepository = ..GetRepository(.pVars)
     Set tProxy = ..GetProxy(.pVars)
+    Set tUserName=""
+    Set tPassword=""
     Do tInstaller.Log(0,"CacheGitHubCI.Install","Calling Update with Namespace="_tNamespace_", Branch="_tBranch_", Repository="_tRepository_" and Proxy="_tProxy_"...")
     Do tInstaller.PushNS("%SYS")
-    Set tSC = ..Update(tNamespace, tRepository, "CacheGitHubCI", tBranch, tProxy)
+    Set tSC = ..Update(tNamespace, tRepository, "CacheGitHubCI", tBranch, tUserName, tPassword, tProxy)
     Do tInstaller.PopNS()
     If $$$ISERR(tSC) Throw ##class(%Installer.Exception).CreateFromStatus(tSC)
     quit $$$OK
