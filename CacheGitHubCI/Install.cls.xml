@@ -144,12 +144,13 @@ Determine Namespace databease resource.</Description>
 <FormalSpec>pVars,pLogLevel,tInstaller</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-    Set Namespace=..GetNamespace(.pVars)
-    Set Branch = ..GetBranch(.pVars)
-    Set Repository = ..GetRepository(.pVars)
+    Set tNamespace=..GetNamespace(.pVars)
+    Set tBranch = ..GetBranch(.pVars)
+    Set tRepository = ..GetRepository(.pVars)
     Set tProxy = ..GetProxy(.pVars)
+    Do tInstaller.Log(0,"CacheGitHubCI.Install","Calling Update with Namespace="_tNamespace_", Branch="_tBranch_", Repository="_tRepository_" and Proxy="_tProxy_"...")
     Do tInstaller.PushNS("%SYS")
-    Set tSC = ..Update(Namespace, Repository, "CacheGitHubCI", Branch, tProxy)
+    Set tSC = ..Update(tNamespace, tRepository, "CacheGitHubCI", tBranch, tProxy)
     Do tInstaller.PopNS()
     If $$$ISERR(tSC) Throw ##class(%Installer.Exception).CreateFromStatus(tSC)
     quit $$$OK
