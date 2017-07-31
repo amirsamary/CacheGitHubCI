@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-20 23:18:38">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.Task">
 <Description>
 Simple update task. Use CacheGitHubCI.Hook if you need more functionality.</Description>
 <Super>%SYS.Task.Definition</Super>
-<TimeChanged>64362,83907.206849</TimeChanged>
 <TimeCreated>64232,70931.143606</TimeCreated>
 
 <Parameter name="TaskName">
@@ -155,12 +154,14 @@ This method is available to be called from csession INSTANCE -UCGCI </Descriptio
 		
 		Do LOG^%ETN
 
-		Do $System.Process.Terminate(0)
+		//Do $System.Process.Terminate(0)
+		Do $zu(4,$j,1)
 	}
 	Else
 	{
-		Write !,"OK!"
-		Do $System.Process.Terminate(1)
+		Write !,"!CGCI RUN OK!"
+		//Do $System.Process.Terminate(5)
+		Do $zu(4,$j,0)
 	}
 ]]></Implementation>
 </Method>

@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-16 12:08:15">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.Hook">
 <Description>
 Hook tying GitHub repository and Cache Namespace.
 Create instance of the class, create webhook or task for updates and save the instance.</Description>
 <Super>%Persistent</Super>
-<TimeChanged>64358,43321.599935</TimeChanged>
 <TimeCreated>64232,70929.929792</TimeCreated>
 
 <Property name="Owner">
@@ -284,9 +283,16 @@ Check repository and update local namespace</Description>
 		Set update.URL = lastCommit.url
 		
 		// Let's run the PreCompile code before we start downloading and compiling classes from github:
-		Write !,"PreCompile()"
+		Write !,"PreCompile: "
 		Set update.PreCompileStatus = hook.PreCompile.Execute()
-		Write !,"PreCompileStatus: ",update.PreCompileStatus
+		If $System.Status.IsError(update.PreCompileStatus)
+		{
+			Do $System.Status.DisplayError(update.PreCompileStatus)
+		}
+		Else
+		{
+			Write "Ok!",!
+		}
 		
 		Do
 		{
@@ -296,7 +302,15 @@ Check repository and update local namespace</Description>
 				// start downloading stuff from github. The Update() method downloads and compiles everything:
 				Write !,"Update()"
 				Set update.CompileStatus = ##class(CacheGitHubCI.GitHub).Update(hook.Owner,hook.Repository,hook.Branch,hook.Username,hook.Password,hook.Namespace, pProxy)
-				Write !,"CompileStatus: ",update.CompileStatus
+				Write !,"Compile: "
+				If $System.Status.IsError(update.CompileStatus)
+				{
+					Do $System.Status.DisplayError(update.CompileStatus)
+				}
+				Else
+				{
+					Write "Ok!",!
+				}
 			}
 			Else
 			{
@@ -305,10 +319,17 @@ Check repository and update local namespace</Description>
 			
 			If ('hook.KeepBrokenSourceOnError) || ($System.Status.IsOK(update.CompileStatus))
 			{
-				Write !,"PostCompile()"
+				Write !,"PostCompile:"
 				// If CompileStatus is OK or, if it isn't but we don't care, we can execute PostCompile
 				Set update.PostCompileStatus = hook.PostCompile.Execute()
-				Write !,"PostCompileStatus: ",update.PostCompileStatus
+				If $System.Status.IsError(update.PostCompileStatus)
+				{
+					Do $System.Status.DisplayError(update.PostCompileStatus)
+				}
+				Else
+				{
+					Write "Ok!",!
+				}
 			}
 			Else
 			{
@@ -320,7 +341,15 @@ Check repository and update local namespace</Description>
 				Write !,"UnitTests()"
 				// If PostCompileStatus is OK or, if it isn't but we don't care, we can execute UnitTests
 				Set update.UnitTestsStatus = hook.UnitTests.Execute()
-				Write !,"UnitTestsStatus: ",update.UnitTestsStatus
+				Write !,"UnitTests: "
+				If $System.Status.IsError(update.UnitTestsStatus)
+				{
+					Do $System.Status.DisplayError(update.UnitTestsStatus)
+				}
+				Else
+				{
+					Write "Ok!",!
+				}
 			}
 			Else
 			{

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-03-20 23:18:38">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.UDL">
 <Super>%RegisteredObject</Super>
-<TimeChanged>64362,83675.495641</TimeChanged>
 <TimeCreated>64232,70931.608196</TimeCreated>
 
 <Method name="IsUDLFile">
@@ -171,7 +170,7 @@ Check whether a file is a web file
 <FormalSpec>ext:%String</FormalSpec>
 <ReturnType>%String</ReturnType>
 <Implementation><![CDATA[
-	set webExts = "csp,html,css,js,ts,scss"
+	set webExts = "csp,html,css,js,ts,scss,txt"
 	return $find(webExts, ext)
 ]]></Implementation>
 </Method>

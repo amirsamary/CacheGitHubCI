@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-01-09 15:31:24">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.Action">
 <Super>%SerialObject</Super>
-<TimeChanged>64244,62586.94358</TimeChanged>
 <TimeCreated>64232,70928.524977</TimeCreated>
 
 <Property name="Type">
@@ -55,9 +54,6 @@ Executes Action specified.</Description>
 	Set class = $p(..Params,",",1)
 	Set method = $p(..Params,",",2)
 	Set args = $l(..Params,",") - 2
-	
-	Write !,"ExecuteClassMethod() - class: ",class," method: ",method," args: ",args
-	
 	For i=3:1:$l(..Params,",") {
 		Set args(i-2)=$p(..Params,",",i)
 	}

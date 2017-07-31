@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Apple Mac OS X for x86-64) 2016.2 (Build 734U)" ts="2017-04-27 19:25:00">
+<Export generator="Cache" version="25">
 <Class name="CacheGitHubCI.GitHub">
 <Super>%RegisteredObject,CacheGitHubCI.UDL</Super>
-<TimeChanged>64400,69490.657525</TimeChanged>
 <TimeCreated>64232,70929.42371</TimeCreated>
 
 <Method name="GetLocalIP">
@@ -23,7 +22,7 @@
 	Set namespace = $Namespace
  	Set SSLConfig = "GitHub"
 
- 	Zn "%SYS"
+ 	Zn "%SYS" 
  	Do:'##class(Security.SSLConfigs).Exists(SSLConfig) ##class(Security.SSLConfigs).Create(SSLConfig)
  	Zn namespace
 
@@ -56,30 +55,42 @@
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	#dim req As %Net.HttpRequest
-	Set req = ..CreateRequest(Username, Password, pProxy)
-	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks"
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		Set req = ..CreateRequest(Username, Password, pProxy)
+		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks"
+	
+		Set hook = ##class(%ZEN.proxyObject).%New()
+		Set hook.name = "web"
+		//set hook.active = 1 // can't supply js true/false. True by default
+		Set hook.events = ##class(%ListOfDataTypes).%New()
+		Do hook.events.Insert("push")
+		Set hook.config = ##class(%ZEN.proxyObject).%New()
+		Set hook.config.url = "http://" _..GetLocalIP() _"/cgci/receive/"_ Owner _ "/" _ Repository _"/" _ Namespace
+		Set hook.config."content_type" = "json"
+		Set hook.config."insecure_ssl" = 1
+		
+		Set tSC = ##class(%ZEN.Auxiliary.jsonProvider).%WriteJSONStreamFromObject(req.EntityBody,hook)
+		Quit:$System.Status.IsError(tSC)
+		
+		Set tSC = req.Post()
+		Quit:$System.Status.IsError(tSC)
+		
+		Set tSC = ..EvaluateHttpResponseStatusCode(req, 201)
+		Quit:$System.Status.IsError(tSC)
 
-	Set hook = ##class(%ZEN.proxyObject).%New()
-	Set hook.name = "web"
-	//set hook.active = 1 // can't supply js true/false. True by default
-	Set hook.events = ##class(%ListOfDataTypes).%New()
-	Do hook.events.Insert("push")
-	Set hook.config = ##class(%ZEN.proxyObject).%New()
-	Set hook.config.url = "http://" _..GetLocalIP() _"/cgci/receive/"_ Owner _ "/" _ Repository _"/" _ Namespace
-	Set hook.config."content_type" = "json"
-	Set hook.config."insecure_ssl" = 1
-	Set st = ##class(%ZEN.Auxiliary.jsonProvider).%WriteJSONStreamFromObject(req.EntityBody,hook)
-	Set st = req.Post()
-
-	Return:$$$ISERR(st) st
-	Return:(req.HttpResponse.StatusCode = 404) $$$ERROR($$$GeneralError,"Repository doesn't exist OR you don't have access")
-	Return:((req.HttpResponse.StatusCode = 403) && (req.HttpResponse.GetHeader("X-RATELIMIT-REMAINING")=0)) $$$ERROR($$$GeneralError,"API rate limit exceeded. Try logging in.")
- 	Return:(req.HttpResponse.StatusCode '= 201) $$$ERROR($$$GeneralError,"Received " _ req.HttpResponse.StatusCode _ " expected 200")
-
- 	Set st = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(req.HttpResponse.Data,,.obj,1)
- 	Set HookId = obj.id
-
-	Return st
+		Set tSC = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(req.HttpResponse.Data,,.obj,1)
+		Quit:$System.Status.IsError(tSC)
+		
+		Set HookId = obj.id
+	}
+	Catch (oException)
+	{
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
+	}
+	
+	Return tSC
 ]]></Implementation>
 </Method>
 
@@ -89,17 +100,26 @@
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
 	#dim req As %Net.HttpRequest
-	Set req = ..CreateRequest(Username, Password, pProxy)
-	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks/" _ HookId
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		Set req = ..CreateRequest(Username, Password, pProxy)
+		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks/" _ HookId
 
-	Set st = req.Send("DELETE","")
+		Set tSC = req.Send("DELETE","")
 
-	Return:$$$ISERR(st) st
-	Return:(req.HttpResponse.StatusCode = 404) $$$ERROR($$$GeneralError,"Repository doesn't exist OR you don't have access")
-	Return:((req.HttpResponse.StatusCode = 403) && (req.HttpResponse.GetHeader("X-RATELIMIT-REMAINING")=0)) $$$ERROR($$$GeneralError,"API rate limit exceeded. Try logging in.")
- 	Return:(req.HttpResponse.StatusCode '= 204) $$$ERROR($$$GeneralError,"Received " _ req.HttpResponse.StatusCode _ " expected 204")
-
-	Return $$$OK
+		Set tSC = req.Get()
+		Quit:$System.Status.IsError(tSC)
+		
+		Set tSC = ..EvaluateHttpResponseStatusCode(req, 204)
+		Quit:$System.Status.IsError(tSC)
+	}
+	Catch (oException)
+	{
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
+	}
+	
+	Return tSC
 ]]></Implementation>
 </Method>
 
@@ -108,18 +128,27 @@
 <FormalSpec>Owner:%String,Repository:%String,Username:%String="",Password:%String="",Namespace=$Namespace,*Hooks,pProxy:%String=""</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	Set req = ..CreateRequest(Username, Password, pProxy)
-	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks"
-
-	Set st = req.Get()
-	Return:$$$ISERR(st) st
-	Return:(req.HttpResponse.StatusCode = 404) $$$ERROR($$$GeneralError,"Repository doesn't exist OR you don't have access")
-	Return:((req.HttpResponse.StatusCode = 403) && (req.HttpResponse.GetHeader("X-RATELIMIT-REMAINING")=0)) $$$ERROR($$$GeneralError,"API rate limit exceeded. Try logging in.")
- 	Return:(req.HttpResponse.StatusCode '= 200) $$$ERROR($$$GeneralError,"Received " _ req.HttpResponse.StatusCode _ " expected 200")
-
- 	#dim objects As List of %ZEN.proxyObject
-	Set st = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(req.HttpResponse.Data,,.Hooks,1)
-	Return st
+	#dim objects As List of %ZEN.proxyObject
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		Set req = ..CreateRequest(Username, Password, pProxy)
+		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/hooks"
+	
+		Set tSC = req.Get()
+		Quit:$System.Status.IsError(tSC)
+		
+		Set tSC = ..EvaluateHttpResponseStatusCode(req)
+		Quit:$System.Status.IsError(tSC)
+	
+		Set tSC = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(req.HttpResponse.Data,,.Hooks,1)
+	}
+	Catch (oException)
+	{
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
+	}
+	
+	Return tSC
 ]]></Implementation>
 </Method>
 
@@ -128,19 +157,28 @@
 <FormalSpec>Owner:%String,Repository:%String,Branch:%String="master",Username:%String="",Password:%String="",pProxy:%String="",*Commit:%ZEN.proxyObject</FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	kill Commit
-	Set req = ..CreateRequest(Username, Password, pProxy)
-	Set:(Branch="") Branch="HEAD" // Branch does not automatically elevates to master
-	Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/commits/" _ Branch
-
-	Set st = req.Get()
-	Return:$$$ISERR(st) st
-	Return:(req.HttpResponse.StatusCode = 404) $$$ERROR($$$GeneralError,"Repository doesn't exist OR you don't have access")
-	Return:((req.HttpResponse.StatusCode = 403) && (req.HttpResponse.GetHeader("X-RATELIMIT-REMAINING")=0)) $$$ERROR($$$GeneralError,"API rate limit exceeded. Try logging in.")
- 	Return:(req.HttpResponse.StatusCode '= 200) $$$ERROR($$$GeneralError,"Received " _ req.HttpResponse.StatusCode _ " expected 200")
-
-	Set st = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(req.HttpResponse.Data,,.Commit,1)
-	Return st
+	Set tSC = $System.Status.OK()
+	Try
+	{
+		kill Commit
+		Set req = ..CreateRequest(Username, Password, pProxy)
+		Set:(Branch="") Branch="HEAD" // Branch does not automatically elevates to master
+		Set req.Location = "repos/" _ Owner _ "/" _ Repository _ "/commits/" _ Branch
+	
+		Set tSC = req.Get()
+		Quit:$System.Status.IsError(tSC)
+		
+		Set tSC = ..EvaluateHttpResponseStatusCode(req)
+		Quit:$System.Status.IsError(tSC)
+		
+		Set tSC = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(req.HttpResponse.Data,,.Commit,1)
+	}
+	Catch (oException)
+	{
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
+	}
+	
+	Return tSC
 ]]></Implementation>
 </Method>
 
@@ -188,11 +226,35 @@ Owner - intersystems-ru, Repository - Cache-MDX2JSON.<br> ]]></Description>
 	}
 	Catch (oException)
 	{
-		Set tSC = oException.AsStatus()
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
 	}
 	
 	ZN tCGCINamespace
 	Quit tSC
+]]></Implementation>
+</Method>
+
+<Method name="EvaluateHttpResponseStatusCode">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pHTTPRequest:%Net.HttpRequest,pExpectedStatusCode:%String="200"</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	Set tHTTPStatusCode = pHTTPRequest.HttpResponse.StatusCode	
+
+	If tHTTPStatusCode=404
+	{
+		Return $$$ERROR($$$GeneralError,"Repository doesn't exist OR you don't have access")
+	}
+	ElseIf ((tHTTPStatusCode=403) && (pHTTPRequest.HttpResponse.GetHeader("X-RATELIMIT-REMAINING")=0)) 
+	{
+		Return $$$ERROR($$$GeneralError,"API rate limit exceeded. Try logging in.")
+	}
+	ElseIf (tHTTPStatusCode'= pExpectedStatusCode) 
+	{
+		Return $$$ERROR($$$GeneralError,"Received "_pStatusCode_" expected "_pExpectedStatusCode)
+	}
+	
+	Return $$$OK
 ]]></Implementation>
 </Method>
 
@@ -206,55 +268,65 @@ Process one directory of GitHub repository. Recursive.<br>
 <FormalSpec><![CDATA[Path:%String="",Request:%Net.HttpRequest,Branch:%String="",pTargetNamespace:%String,&Links:%ListOfDataTypes]]></FormalSpec>
 <ReturnType>%Status</ReturnType>
 <Implementation><![CDATA[
-	Set location = Request.Location
-	Set Request.Location = Request.Location _ Path
-	Do:(Branch'="") Request.SetParam("ref",Branch)
-
-	Set st = Request.Get()
-
-	Return:$$$ISERR(st) st
-	Return:(Request.HttpResponse.StatusCode = 404) $$$ERROR($$$GeneralError,"Repository doesn't exist OR you don't have access")
-	Return:((Request.HttpResponse.StatusCode = 403) && (Request.HttpResponse.GetHeader("X-RATELIMIT-REMAINING")=0)) $$$ERROR($$$GeneralError,"API rate limit exceeded. Try logging in.")
- 	Return:(Request.HttpResponse.StatusCode '= 200) $$$ERROR($$$GeneralError,"Received " _ Request.HttpResponse.StatusCode _ " expected 200")
-
  	#dim objects As List of %ZEN.proxyObject
  	#dim obj As %ZEN.proxyObject
-	Set st = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(Request.HttpResponse.Data,,.objects,1)
-	Return:$$$ISERR(st) st
 
-	Write !,Request.Location
-	For i = 1:1:objects.Count()
+	Set tSC = $System.Status.OK()
+	Try
 	{
-		Set obj = objects.GetAt(i)
-		If (obj.type = "dir")
+		Set location = Request.Location
+		Set Request.Location = Request.Location _ Path
+		If (Branch'="") Do Request.SetParam("ref",Branch)
+
+		Set tSC = Request.Get()
+		Quit:$System.Status.IsError(tSC)
+	
+		Set tSC = ..EvaluateHttpResponseStatusCode(Request)
+		Quit:$System.Status.IsError(tSC)
+	
+		Set tSC = ##class(%ZEN.Auxiliary.jsonProvider).%ConvertJSONToObject(Request.HttpResponse.Data,,.objects,1)
+		Quit:$System.Status.IsError(tSC)
+
+		Write !,Request.Location
+		For i = 1:1:objects.Count()
 		{
-			If $Extract(obj.name)'="."
+			Set obj = objects.GetAt(i)
+			If (obj.type = "dir")
 			{
-				Set st = ..ProcessDirectory("/"_obj.name,Request,Branch,pTargetNamespace,.Links)
+				If $Extract(obj.name)'="."
+				{
+					Set tSC = ..ProcessDirectory("/"_obj.name,Request,Branch,pTargetNamespace,.Links)
+				}
+				Else
+				{
+					Write !,"Ignoring hidden directory ",Request.Location _ Path_"/"_obj.name,"..."
+				}
+				Quit:$System.Status.IsError(tSC)
+			}
+			ElseIf (obj.type = "file")
+			{
+				Set bIsCacheFile = ..IsCacheFile(obj)
+				If ..FileHasChanged(pTargetNamespace, obj.path, obj.sha)
+				{
+					Write "."
+					Do Links.Insert($LB(obj."download_url",bIsCacheFile,obj.path, obj.sha))
+				}
 			}
 			Else
 			{
-				Write !,"Ignoring hidden directory ",Request.Location _ Path_"/"_obj.name,"..."
-			}
-			Return:$$$ISERR(st) st
-		}
-		ElseIf (obj.type = "file")
-		{
-			//Do:..IsCacheFile(obj) Links.Insert(obj."download_url")
-			Set bIsCacheFile = ..IsCacheFile(obj)
-			If ..FileHasChanged(pTargetNamespace, obj.path, obj.sha)
-			{
-				Write "."
-				Do Links.Insert($LB(obj."download_url",bIsCacheFile,obj.path, obj.sha))
+				// obj.type = "symlink" or obj.type = "submodule"
 			}
 		}
-		Else
-		{
-			// obj.type = "symlink" or obj.type = "submodule"
-		}
+		Quit:$System.Status.IsError(tSC)
+		
+		Set Request.Location = location // to keep track of where in the repository tree we are
 	}
-	Set Request.Location = location // to keep track of where in the repository tree we are
-	Return $$$OK
+	Catch (oException)
+	{
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
+	}
+	
+	Return tSC
 ]]></Implementation>
 </Method>
 
@@ -313,7 +385,7 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 <Implementation><![CDATA[
 	Kill Items
 	Set Request.Server = "raw.githubusercontent.com"
-	Set st = $$$OK
+	Set tSC = $$$OK
 	Try
 	{
 		Set tNS = $Namespace
@@ -328,10 +400,19 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			Set tFileHash = $ListGet(Links.GetAt(i),4)
 			
 			Write !!,tFileFullName
-			Set streq = Request.Get($e(link,35,*)) // Remove "https://raw.githubusercontent.com/" from URL.
-			If $$$ISERR(streq)
+			Set tSCReq = Request.Get($e(link,35,*)) // Remove "https://raw.githubusercontent.com/" from URL.
+			If $$$ISERR(tSCReq)
 			{
-				Set st=$$$ADDSC(st, streq)
+				Write !,$C(9),"Error al descargar contenido: ",$System.Status.GetErrorText(tSCReq)
+				Set tSC=$$$ADDSC(tSC, tSCReq)
+				Continue
+			}
+			
+			Set tSCReq = ..EvaluateHttpResponseStatusCode(Request)
+			If $$$ISERR(tSCReq)
+			{
+				Write !,$C(9),"Status diferente de 200 al descargar contenido: ",$System.Status.GetErrorText(tSCReq)
+				Set tSC=$$$ADDSC(tSC, tSCReq)
 				Continue
 			}
 
@@ -340,45 +421,45 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 			Do binarystream.Rewind() // just in case
 
 			Set characterStream=##class(%GlobalCharacterStream).%New() //translating binary stream into character stream
-			Set stTranslate=$$$OK
+			Set tSCTranslate=$$$OK
 			Try
 			{
 				While 'binarystream.AtEnd
 				{
 					//Use eol to prevent breaking lines larger than 32Kb
-					Set line=binarystream.ReadLine(, .stTranslate, .eol)
-					Quit:$System.Status.IsError(stTranslate)
+					Set line=binarystream.ReadLine(, .tSCTranslate, .eol)
+					Quit:$System.Status.IsError(tSCTranslate)
 
 					If eol
 					{
-						Set stTranslate=characterStream.WriteLine(line)
+						Set tSCTranslate=characterStream.WriteLine(line)
 					}
 					Else
 					{
-						Set stTranslate=characterStream.Write(line)
+						Set tSCTranslate=characterStream.Write(line)
 					}
-					Quit:$System.Status.IsError(stTranslate)
+					Quit:$System.Status.IsError(tSCTranslate)
 				}
-				Quit:$System.Status.IsError(stTranslate)
+				Quit:$System.Status.IsError(tSCTranslate)
 
 				Do characterStream.Rewind()
 			}
 			Catch (oTranslateStreamException)
 			{
-				Set stTranslate=oTranslateStreamException.AsStatus()
+				Set tSCTranslate=oTranslateStreamException.AsStatus()
 			}
 
-			If $System.Status.IsError(stTranslate)
+			If $System.Status.IsError(tSCTranslate)
 			{
 				//Could not convert binary stream to character stream
 				//It is probably a binary file anyway
 				Set characterStream=""
-				Set st=$$$ADDSC(st, stTranslate)
+				Set tSC=$$$ADDSC(tSC, tSCTranslate)
 			}
 
 			Do binarystream.Rewind()
 
-			Set stload = $$$OK
+			Set tSCLoad = $$$OK
 
 			set items = ""
 			ZN pTargetNamespace
@@ -391,21 +472,21 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 				// PNG, etc. file, that can sit outside the database, the file will be generated as usual. If it is a CSP file
 				// the file will be generated outside the database as usual but the Update() method won't be loading them into
 				// the database. That will be done by the primary mirror member when it downloads the file from github. 
-				Set stload = ..LoadUDLFile(characterStream, binarystream, link, .items)
+				Set tSCLoad = ..LoadUDLFile(characterStream, binarystream, link, .items)
 			}
 			ElseIf bIsCacheFile
 			{
 				Write " - XML"
 				//Unfortunately LoadStream will always verify if the database can be written and refrain
 				//to generate CSP, Js, Html, etc. files... So, working with XML will remain incompatible with mirroring.
-				Set stload = $system.OBJ.LoadStream(characterStream,"",.error,.items,,,,"UTF8")
+				Set tSCLoad = $system.OBJ.LoadStream(characterStream,"",.error,.items,,,,"UTF8")
 			}
 			
 			ZN tNS
 			
-	 		If $$$ISERR(stload)
+	 		If $$$ISERR(tSCLoad)
 	 		{
-		 		Set st=$$$ADDSC(st, stload)
+		 		Set tSC=$$$ADDSC(tSC, tSCLoad)
 		 		Continue
 	 		}
 	 		Else
@@ -419,13 +500,12 @@ Download list of files on https://raw.githubusercontent.com/ server.<br>
 	}
 	Catch (oException)
 	{
-		Write !,"EXCEPTION on ##class(CacheGitHubCI.GitHub).DownloadFiles()"
-		Set st = oException.AsStatus()
+		Set tSC=$$$ADDSC(tSC, oException.AsStatus())
 	}
 	
 	ZN tNS
 	
-	Quit st
+	Quit tSC
 ]]></Implementation>
 </Method>
 
